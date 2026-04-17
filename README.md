@@ -1,0 +1,4 @@
+-Veamos como nos manejamos con esta cosa..
+-Si saben de tips para usarlo vien compaltan
+-Hagamos lo q podamos yafue
+-Muacks
