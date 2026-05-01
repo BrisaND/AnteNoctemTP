@@ -4,7 +4,7 @@
 PlayerSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 28
-  productGUID: 8bdd65042fe007746bc0802eb12a07fc
+  productGUID: 2ab2388995f16cc4b8361c0f49bf69c5
   AndroidProfiler: 0
   AndroidFilterTouchesWhenObscured: 0
   AndroidEnableSustainedPerformanceMode: 0
@@ -13,7 +13,7 @@ PlayerSettings:
   useOnDemandResources: 0
   accelerometerFrequency: 60
   companyName: DefaultCompany
-  productName: AnteNcotem
+  productName: PRUEBAS
   defaultCursor: {fileID: 0}
   cursorHotspot: {x: 0, y: 0}
   m_SplashScreenBackgroundColor: {r: 0.13725491, g: 0.12156863, b: 0.1254902, a: 1}
@@ -843,14 +843,14 @@ PlayerSettings:
   editorAssembliesCompatibilityLevel: 1
   m_RenderingPath: 1
   m_MobileRenderingPath: 1
-  metroPackageName: AnteNcotem
+  metroPackageName: PRUEBAS
   metroPackageVersion: 
   metroCertificatePath: 
   metroCertificatePassword: 
   metroCertificateSubject: 
   metroCertificateIssuer: 
   metroCertificateNotAfter: 0000000000000000
-  metroApplicationDescription: AnteNcotem
+  metroApplicationDescription: PRUEBAS
   wsaImages: {}
   metroTileShortName: 
   metroTileShowName: 0
@@ -919,13 +919,13 @@ PlayerSettings:
   qnxGraphicConfPath: 
   apiCompatibilityLevel: 6
   captureStartupLogs: {}
-  activeInputHandler: 1
+  activeInputHandler: 2
   windowsGamepadBackendHint: 0
-  cloudProjectId: 9569c17b-9add-44f2-a4f9-850da2aa2b90
+  cloudProjectId: 7b69c5e3-5be0-45ae-81f4-9ef51280b2e2
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: AnteNcotem
-  organizationId: unity_19155d39ac9150a2dfd3
+  projectName: PRUEBAS
+  organizationId: plezii44
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}
