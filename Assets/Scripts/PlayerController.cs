@@ -33,6 +33,8 @@ public class PlayerController : MonoBehaviour
     private Vector3 moveInput;
     private Camera mainCam;
 
+    private bool controlsEnabled = true;
+
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
@@ -43,6 +45,8 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        if (!controlsEnabled) return;
+
         // Input movimiento (WASD / flechas)
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
@@ -59,8 +63,13 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
+        if (!controlsEnabled)
+        {
+            rb.linearVelocity = Vector3.zero;
+            return;
+        }
+
         Move();
-        RotateTowardsMovement();
     }
 
     void Move()
@@ -76,11 +85,6 @@ public class PlayerController : MonoBehaviour
         rb.linearVelocity = velocity;
     }
 
-    void RotateTowardsMovement()
-    {
-        // ya no rota con el movimiento, lo hace la camara
-    }
-
     void UpdateState()
     {
         bool isMoving = moveInput.sqrMagnitude > 0.01f;
@@ -89,6 +93,7 @@ public class PlayerController : MonoBehaviour
         if (!isMoving)
         {
             currentState = MoveState.Idle;
+
             currentNoiseRadius = 0f;
         }
         else if (isCrouching)
@@ -127,6 +132,17 @@ public class PlayerController : MonoBehaviour
             playerCollider.height = isCrouching ? crouchHeight : standHeight;
             // ajustamos el centro para que no flote
             playerCollider.center = new Vector3(0, playerCollider.height / 2f, 0);
+        }
+    }
+
+    // Permite habilitar/deshabilitar controles (usado por el ciudadano si detiene al jugador)
+    public void SetControlsEnabled(bool enabled)
+    {
+        controlsEnabled = enabled;
+        if (!enabled)
+        {
+            // parar inmediatamente
+            rb.linearVelocity = Vector3.zero;
         }
     }
 
