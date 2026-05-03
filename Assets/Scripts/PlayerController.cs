@@ -10,7 +10,7 @@ public class PlayerController : MonoBehaviour
     public float rotationSpeed = 10f;
 
     [Header("Crouch")]
-    public float standHeight = 1.8f;
+    public float standHeight = 2f;
     public float crouchHeight = 1f;
     public CapsuleCollider playerCollider;
 
@@ -129,9 +129,11 @@ public class PlayerController : MonoBehaviour
         isCrouching = !isCrouching;
         if (playerCollider != null)
         {
-            playerCollider.height = isCrouching ? crouchHeight : standHeight;
+            float center = playerCollider.center.y;
+            float targetHeight = isCrouching ? crouchHeight : standHeight;
+            playerCollider.height = targetHeight;
             // ajustamos el centro para que no flote
-            playerCollider.center = new Vector3(0, playerCollider.height / 2f, 0);
+            playerCollider.center = new Vector3(0, center, 0);
         }
     }
 
