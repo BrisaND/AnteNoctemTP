@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections.Generic;
+using System.Collections;
 
 [RequireComponent(typeof(NavMeshAgent))]
 public class WardenAI : MonoBehaviour
@@ -44,6 +45,9 @@ public class WardenAI : MonoBehaviour
     private float waitTimer = 0f;
     private float searchTimer = 0f;
     private Vector3 lastKnownPosition;
+
+    // Coroutine de aproximación cuando es alertado por un ciudadano
+    private Coroutine approachCoroutine;
 
     void Awake()
     {
@@ -210,6 +214,37 @@ public class WardenAI : MonoBehaviour
     {
         lastKnownPosition = pos;
         StartChase();
+    }
+
+    // Acercarse a un objetivo y ejecutar la acción de "matar"
+    public void ApproachAndExecuteKill(Transform target)
+    {
+        if (target == null) return;
+        if (approachCoroutine != null) StopCoroutine(approachCoroutine);
+        approachCoroutine = StartCoroutine(ApproachAndKillRoutine(target));
+    }
+
+    private IEnumerator ApproachAndKillRoutine(Transform target)
+    {
+        currentState = WardenState.Chasing;
+        agent.isStopped = false;
+        agent.speed = chaseSpeed;
+
+        while (target != null)
+        {
+            agent.SetDestination(target.position);
+
+            if (!agent.pathPending && agent.remainingDistance <= catchDistance)
+            {
+                // Al alcanzar la distancia de captura ejecuta la lógica de game over / muerte
+                TriggerGameOver();
+                agent.isStopped = true;
+                yield break;
+            }
+            yield return null;
+        }
+
+        agent.isStopped = true;
     }
 
     void OnDrawGizmos()

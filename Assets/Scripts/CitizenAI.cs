@@ -11,7 +11,6 @@ public class CitizenAI : MonoBehaviour
     [Header("Patrullaje")]
     public List<Transform> patrolPoints = new List<Transform>();
 
-
     [Header("Debug")]
     public bool showGizmo = true;
 
@@ -24,9 +23,15 @@ public class CitizenAI : MonoBehaviour
     private PlayerController playerCtrl;
     private int currentPatrolIndex = 0;
 
+    // Nueva referencia al WardenAI
+    private WardenAI warden;
+
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
+
+        // Buscar warden en la escena (puedes asignarlo por inspector si prefieres)
+        if (warden == null) warden = FindFirstObjectByType<WardenAI>();
     }
 
     void Start()
@@ -106,6 +111,12 @@ public class CitizenAI : MonoBehaviour
     IEnumerator DetainPlayerCoroutine()
     {
         currentState = CitizenState.Detaining;
+
+        // Avisar al warden para que se acerque y ejecute su lógica de kill
+        if (warden != null && player != null)
+        {
+            warden.AlertToPosition(player.position);
+        }
 
         // detener al agente mientras detiene al jugador para mantener la interacción coherente
         agent.isStopped = true;
