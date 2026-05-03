@@ -3,16 +3,40 @@
   "WorkspaceRootPath": "C:\\Users\\brisa\\Documents\\AnteNoctemTP\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{3F750352-52F3-DF00-D7EF-5379E15624AC}|Assembly-CSharp.csproj|C:\\Users\\brisa\\Documents\\AnteNoctemTP\\assets\\menuscripts\\menumanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{3F750352-52F3-DF00-D7EF-5379E15624AC}|Assembly-CSharp.csproj|solutionrelative:assets\\menuscripts\\menumanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{3F750352-52F3-DF00-D7EF-5379E15624AC}|Assembly-CSharp.csproj|c:\\users\\brisa\\documents\\antenoctemtp\\assets\\scripts\\quickskillcheck.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3F750352-52F3-DF00-D7EF-5379E15624AC}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\quickskillcheck.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{3F750352-52F3-DF00-D7EF-5379E15624AC}|Assembly-CSharp.csproj|c:\\users\\brisa\\documents\\antenoctemtp\\assets\\menuscripts\\pausemanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{3F750352-52F3-DF00-D7EF-5379E15624AC}|Assembly-CSharp.csproj|solutionrelative:assets\\menuscripts\\pausemanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{3F750352-52F3-DF00-D7EF-5379E15624AC}|Assembly-CSharp.csproj|C:\\Users\\brisa\\Documents\\AnteNoctemTP\\assets\\scripts\\trashcan.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3F750352-52F3-DF00-D7EF-5379E15624AC}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\trashcan.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3F750352-52F3-DF00-D7EF-5379E15624AC}|Assembly-CSharp.csproj|C:\\Users\\brisa\\Documents\\AnteNoctemTP\\assets\\scripts\\pressureplate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3F750352-52F3-DF00-D7EF-5379E15624AC}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\pressureplate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{3F750352-52F3-DF00-D7EF-5379E15624AC}|Assembly-CSharp.csproj|C:\\Users\\brisa\\Documents\\AnteNoctemTP\\assets\\scripts\\playercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{3F750352-52F3-DF00-D7EF-5379E15624AC}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\playercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3F750352-52F3-DF00-D7EF-5379E15624AC}|Assembly-CSharp.csproj|C:\\Users\\brisa\\Documents\\AnteNoctemTP\\assets\\scripts\\gamemanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3F750352-52F3-DF00-D7EF-5379E15624AC}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\gamemanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3F750352-52F3-DF00-D7EF-5379E15624AC}|Assembly-CSharp.csproj|C:\\Users\\brisa\\Documents\\AnteNoctemTP\\assets\\scripts\\citizenai.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3F750352-52F3-DF00-D7EF-5379E15624AC}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\citizenai.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3F750352-52F3-DF00-D7EF-5379E15624AC}|Assembly-CSharp.csproj|C:\\Users\\brisa\\Documents\\AnteNoctemTP\\assets\\scripts\\wardenai.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3F750352-52F3-DF00-D7EF-5379E15624AC}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\wardenai.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3F750352-52F3-DF00-D7EF-5379E15624AC}|Assembly-CSharp.csproj|C:\\Users\\brisa\\Documents\\AnteNoctemTP\\assets\\menuscripts\\menumanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3F750352-52F3-DF00-D7EF-5379E15624AC}|Assembly-CSharp.csproj|solutionrelative:assets\\menuscripts\\menumanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3F750352-52F3-DF00-D7EF-5379E15624AC}|Assembly-CSharp.csproj|C:\\Users\\brisa\\Documents\\AnteNoctemTP\\assets\\menuscripts\\pausemanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3F750352-52F3-DF00-D7EF-5379E15624AC}|Assembly-CSharp.csproj|solutionrelative:assets\\menuscripts\\pausemanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -22,11 +46,61 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "QuickSkillCheck.cs",
+              "DocumentMoniker": "C:\\Users\\brisa\\Documents\\AnteNoctemTP\\Assets\\Scripts\\QuickSkillCheck.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\QuickSkillCheck.cs",
+              "ToolTip": "C:\\Users\\brisa\\Documents\\AnteNoctemTP\\Assets\\Scripts\\QuickSkillCheck.cs",
+              "RelativeToolTip": "Assets\\Scripts\\QuickSkillCheck.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-03T21:24:53.513Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
               "DocumentIndex": 1,
+              "Title": "TrashCan.cs",
+              "DocumentMoniker": "C:\\Users\\brisa\\Documents\\AnteNoctemTP\\Assets\\Scripts\\TrashCan.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\TrashCan.cs",
+              "ToolTip": "C:\\Users\\brisa\\Documents\\AnteNoctemTP\\Assets\\Scripts\\TrashCan.cs",
+              "RelativeToolTip": "Assets\\Scripts\\TrashCan.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACQAAAAWAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-03T15:58:46.236Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "PressurePlate.cs",
+              "DocumentMoniker": "C:\\Users\\brisa\\Documents\\AnteNoctemTP\\Assets\\Scripts\\PressurePlate.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\PressurePlate.cs",
+              "ToolTip": "C:\\Users\\brisa\\Documents\\AnteNoctemTP\\Assets\\Scripts\\PressurePlate.cs",
+              "RelativeToolTip": "Assets\\Scripts\\PressurePlate.cs",
+              "ViewState": "AgIAABcAAAAAAAAAAAAAwC4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-03T14:17:41.899Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "CitizenAI.cs",
+              "DocumentMoniker": "C:\\Users\\brisa\\Documents\\AnteNoctemTP\\Assets\\Scripts\\CitizenAI.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\CitizenAI.cs",
+              "ToolTip": "C:\\Users\\brisa\\Documents\\AnteNoctemTP\\Assets\\Scripts\\CitizenAI.cs",
+              "RelativeToolTip": "Assets\\Scripts\\CitizenAI.cs",
+              "ViewState": "AgIAAGYAAAAAAAAAAAAuwHoAAAAlAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-03T12:37:35.125Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
               "Title": "PauseManager.cs",
               "DocumentMoniker": "C:\\Users\\brisa\\Documents\\AnteNoctemTP\\Assets\\MenuScripts\\PauseManager.cs",
               "RelativeDocumentMoniker": "Assets\\MenuScripts\\PauseManager.cs",
@@ -34,12 +108,11 @@
               "RelativeToolTip": "Assets\\MenuScripts\\PauseManager.cs",
               "ViewState": "AgIAAAoAAAAAAAAAAAAQwA4AAABKAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-05-03T00:54:43.932Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-05-03T00:54:43.932Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 7,
               "Title": "MenuManager.cs",
               "DocumentMoniker": "C:\\Users\\brisa\\Documents\\AnteNoctemTP\\Assets\\MenuScripts\\MenuManager.cs",
               "RelativeDocumentMoniker": "Assets\\MenuScripts\\MenuManager.cs",
@@ -47,20 +120,43 @@
               "RelativeToolTip": "Assets\\MenuScripts\\MenuManager.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABcAAAAFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-05-03T00:40:48.802Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-05-03T00:40:48.802Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "PlayerController.cs",
               "DocumentMoniker": "C:\\Users\\brisa\\Documents\\AnteNoctemTP\\Assets\\Scripts\\PlayerController.cs",
               "RelativeDocumentMoniker": "Assets\\Scripts\\PlayerController.cs",
               "ToolTip": "C:\\Users\\brisa\\Documents\\AnteNoctemTP\\Assets\\Scripts\\PlayerController.cs",
               "RelativeToolTip": "Assets\\Scripts\\PlayerController.cs",
-              "ViewState": "AgIAAGwAAAAAAAAAAAAIwIcAAAA+AAAAAAAAAA==",
+              "ViewState": "AgIAAIkAAAAAAAAAAAAUwKEAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-05-02T11:26:48.088Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "GameManager.cs",
+              "DocumentMoniker": "C:\\Users\\brisa\\Documents\\AnteNoctemTP\\Assets\\Scripts\\GameManager.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\GameManager.cs",
+              "ToolTip": "C:\\Users\\brisa\\Documents\\AnteNoctemTP\\Assets\\Scripts\\GameManager.cs",
+              "RelativeToolTip": "Assets\\Scripts\\GameManager.cs",
+              "ViewState": "AgIAAF8AAAAAAAAAAAAmwDwAAAAZAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-03T13:24:28.429Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "WardenAI.cs",
+              "DocumentMoniker": "C:\\Users\\brisa\\Documents\\AnteNoctemTP\\Assets\\Scripts\\WardenAI.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\WardenAI.cs",
+              "ToolTip": "C:\\Users\\brisa\\Documents\\AnteNoctemTP\\Assets\\Scripts\\WardenAI.cs",
+              "RelativeToolTip": "Assets\\Scripts\\WardenAI.cs",
+              "ViewState": "AgIAABMAAAAAAAAAAAAQwNYAAAAgAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-03T12:47:31.722Z"
             }
           ]
         }

@@ -65,7 +65,11 @@ public class PlayerController : MonoBehaviour
     {
         if (!controlsEnabled)
         {
-            rb.linearVelocity = Vector3.zero;
+            // Si hay Rigidbody y no es kinematic, detenerlo; si es kinematic no tocarlo.
+            if (rb != null && !rb.isKinematic)
+            {
+                rb.linearVelocity = Vector3.zero;
+            }
             return;
         }
 
@@ -81,8 +85,21 @@ public class PlayerController : MonoBehaviour
 
         float speed = GetCurrentSpeed();
         Vector3 velocity = dir * speed;
-        velocity.y = rb.linearVelocity.y;
-        rb.linearVelocity = velocity;
+
+        // conservar componente Y actual si existe Rigidbody no-kinematic
+        float currentY = 0f;
+        if (rb != null && !rb.isKinematic)
+        {
+            currentY = rb.linearVelocity.y;
+            velocity.y = currentY;
+            rb.linearVelocity = velocity;
+        }
+        else
+        {
+            // Si Rigidbody es kinematic (por ejemplo forzado por PressurePlate), mover por transform como fallback
+            velocity.y = 0f;
+            transform.position += velocity * Time.fixedDeltaTime;
+        }
     }
 
     void UpdateState()
@@ -137,14 +154,30 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    // Resetea el movimiento del jugador luego de caerse, para evitar que quede con velocidad residual o en estado incorrecto
+    public void ResetMovementState()
+    {
+        moveInput = Vector3.zero;
+        currentState = MoveState.Idle;
+
+        if (rb != null && !rb.isKinematic)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+    }
+
     // Permite habilitar/deshabilitar controles (usado por el ciudadano si detiene al jugador)
     public void SetControlsEnabled(bool enabled)
     {
         controlsEnabled = enabled;
         if (!enabled)
         {
-            // parar inmediatamente
-            rb.linearVelocity = Vector3.zero;
+            // parar inmediatamente solo si Rigidbody está en modo físico
+            if (rb != null && !rb.isKinematic)
+            {
+                rb.linearVelocity = Vector3.zero;
+            }
         }
     }
 
