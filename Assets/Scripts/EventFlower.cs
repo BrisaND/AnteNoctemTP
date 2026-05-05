@@ -9,13 +9,13 @@ public class EventFlower : MonoBehaviour
     [Header("Configuración")]
     [Tooltip("Número de pulsaciones de espacio necesarias para ganar")]
     public int requiredPresses = 10;
-    [Tooltip("Duración máxima en segundos para completar el skillcheck")]
+    [Tooltip("Duración para completar el skillcheck")]
     public float duration = 3f;
 
     [Header("UI")]
-    [Tooltip("Canvas o panel que contiene la UI del skillcheck (se activará/desactivará)")]
+    [Tooltip("Canvas que contiene el skillcheck")]
     public GameObject uiPanel;
-    [Tooltip("Texto TextMeshPro (TMP_Text). Asigna si usas TextMeshPro.")]
+    [Tooltip("Texto TextMeshPro")]
     public TMP_Text pressesTMP;
     [Tooltip("Barra que indica el progreso en el evento")]
     public Slider progressBar;
@@ -26,6 +26,7 @@ public class EventFlower : MonoBehaviour
     float timer;
     bool active;
 
+    // Iniciacion del skillcheck
     public void StartSkillCheck()
     {
         if (active) return;
@@ -37,6 +38,7 @@ public class EventFlower : MonoBehaviour
         StartCoroutine(RunSkillCheck());
     }
 
+    // Lógica del skillcheck
     IEnumerator RunSkillCheck()
     {
         while (active && timer > 0f)
@@ -62,6 +64,8 @@ public class EventFlower : MonoBehaviour
         if (active) Finish(false);
     }
 
+
+    // Actualiza el texto y la barra de progreso
     void UpdateUI()
     {
         string text = $"{currentPresses}/{requiredPresses}";
@@ -77,6 +81,7 @@ public class EventFlower : MonoBehaviour
         }
     }
 
+    // Finaliza el skillcheck, desactiva UI y lanza el evento con el resultado
     void Finish(bool success)
     {
         active = false;
@@ -84,6 +89,7 @@ public class EventFlower : MonoBehaviour
         OnSkillCheckResult?.Invoke(success);
     }
 
+    // Permite cancelar el skillcheck desde fuera (si el jugador se libera o muere)
     public void Cancel()
     {
         if (!active) return;
@@ -92,5 +98,6 @@ public class EventFlower : MonoBehaviour
         OnSkillCheckResult?.Invoke(false);
     }
 
+    // para saber si el skillcheck está activo
     public bool IsActive => active;
 }

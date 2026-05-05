@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(Collider))]
 public class TrashCan : MonoBehaviour
@@ -12,65 +13,57 @@ public class TrashCan : MonoBehaviour
     public bool debugLogs = true;
 
     [Header("Puntuación")]
-    [Tooltip("Segundos entre intentos de ganar 1 punto")]
-    public float timePerPoint = 2f;
-    [Tooltip("Evento que recibe '1' cada vez que se gana un punto")]
     public UnityEvent<int> OnScoreGained;
     int localScore = 0;
 
-    [Header("Flor (objeto existente en escena)")]
-    [Tooltip("Referencia al GameObject de la flor ya presente en la escena (debe estar en la posición que quieres). El script solo la activará/desactivará.")]
+    [Header("Flor (debe existir en escena)")]
+    [Tooltip("Referencia al GameObject de la flor ya presente en la escena (debe estar en la posición deseada).")]
     public GameObject flowerObject;
     [Range(0f, 1f)]
-    [Tooltip("Probabilidad (0..1) de que aparezca la flor e interrumpa la obtención de puntos")]
     public float flowerChance = 0.2f;
-    [Tooltip("Tiempo durante el cual el jugador queda retenido sin ganar puntos (si fallas)")]
+    [Tooltip("Tiempo durante el cual el jugador queda retenido si falla")]
     public float flowerRetainDuration = 3f;
-    [Tooltip("Tiempo que la flor permanece activa (se ocultará automáticamente)")]
+    [Tooltip("Tiempo que la flor permanece activa")]
     public float flowerLifetime = 4f;
-    [Tooltip("Si true, la flor se desactiva al Start si está asignada")]
     public bool deactivateFlowerAtStart = true;
     public UnityEvent OnFlowerSpawned;
 
-    [Header("SkillCheck rápido")]
-    [Tooltip("Referencia al componente quickEventFlower (opcional). Si se asigna, se usa para intentar huir.")]
+    [Header("SkillCheck")]
+    [Tooltip("Referencia al componente EventFlower (skillcheck) que ya está en la escena.")]
     public EventFlower quickEventFlower;
-    [Tooltip("Número de pulsaciones necesarias para huir (si se usa quickEventFlower)")]
+    [Tooltip("Número de pulsaciones necesarias para huir")]
     public int quickRequiredPresses = 10;
     [Tooltip("Si true, el skillcheck usará flowerRetainDuration como tiempo límite")]
     public bool useRetainDurationAsSkillTime = true;
 
     [Header("Control del jugador")]
-    [Tooltip("Si true usará el componente PlayerController para pausar controles; si no existe intentará deshabilitar componentes heurísticos")]
+    [Tooltip("Usar PlayerController para pausar controles si existe")]
     public bool pausePlayerMovement = true;
 
     bool playerInRange;
-    bool interacting;
-    Coroutine interactionCoroutine;
-
     GameObject currentPlayer;
     PlayerController currentPlayerController;
     List<Behaviour> disabledMovementComponents = new List<Behaviour>();
 
+    // Evita reentradas
+    bool interactionInProgress = false;
+
     void Start()
     {
+        // Asegurarse de que flor y skillcheck empiezan desactivados
+        if (deactivateFlowerAtStart) flowerObject.SetActive(false);
+
+        // Aplicar parámetros al skillcheck existente
+        quickEventFlower.requiredPresses = quickRequiredPresses;
+        quickEventFlower.duration = useRetainDurationAsSkillTime ? flowerRetainDuration : quickEventFlower.duration;
+
         var col = GetComponent<Collider>();
-        if (col != null && !col.isTrigger)
-        {
-            Debug.LogWarning($"TrashCan: el Collider en '{name}' no está marcado como IsTrigger. Recomiendo marcarlo para que OnTriggerEnter/Exit funcione correctamente.");
-        }
 
-        if (flowerObject != null && deactivateFlowerAtStart)
+        var gm = GameManager.Instance ?? FindFirstObjectByType<GameManager>();
+        if (gm != null)
         {
-            flowerObject.SetActive(false);
-            if (debugLogs) Debug.Log($"TrashCan: flor '{flowerObject.name}' desactivada al inicio.");
-        }
-
-        if (quickEventFlower != null)
-        {
-            // aplicar parámetros por defecto
-            quickEventFlower.requiredPresses = quickRequiredPresses;
-            quickEventFlower.duration = useRetainDurationAsSkillTime ? flowerRetainDuration : quickEventFlower.duration;
+            OnScoreGained.AddListener(gm.AddScore);
+            if (debugLogs) Debug.Log("TrashCan: OnScoreGained conectado automáticamente a GameManager.AddScore.");
         }
     }
 
@@ -78,185 +71,124 @@ public class TrashCan : MonoBehaviour
     {
         if (Input.GetKeyDown(interactKey))
         {
+            // Solo permitir interacción si el jugador está en rango
             if (!playerInRange)
             {
-                if (debugLogs) Debug.Log("TrashCan: pulsada la tecla de interacción pero el jugador NO está en rango (playerInRange=false). Comprueba Collider/Tag/Rigidbody.");
                 return;
             }
 
-            if (!interacting) StartInteraction();
-            else StopInteraction();
+            InteractOnce();
         }
     }
 
-    public void ForceInteract()
+    // Maneja una interacción completa (aparecer flor, skillcheck, retención, puntuación) sin permitir reentradas
+    void InteractOnce()
     {
-        if (!playerInRange)
+        if (interactionInProgress)
         {
-            if (debugLogs) Debug.Log("TrashCan.ForceInteract: jugador no está en rango.");
             return;
         }
 
-        if (!interacting) StartInteraction();
-        else StopInteraction();
+        StartCoroutine(HandleSingleInteraction());
     }
 
-    void StartInteraction()
+    // Cmaneja toda la lógica de una interacción completa, asegurando que no se pueden solapar múltiples interacciones
+    IEnumerator HandleSingleInteraction()
     {
-        interacting = true;
-        interactionCoroutine = StartCoroutine(InteractionRoutine());
-        if (debugLogs) Debug.Log("TrashCan: interacción iniciada.");
-    }
+        interactionInProgress = true;
 
-    void StopInteraction()
-    {
-        interacting = false;
-        if (interactionCoroutine != null)
+        if (Random.value < flowerChance)
         {
-            StopCoroutine(interactionCoroutine);
-            interactionCoroutine = null;
-        }
-        RestorePlayerMovement();
-        // cancelar skillcheck si estaba en curso
-        if (quickEventFlower != null && quickEventFlower.IsActive) quickEventFlower.Cancel();
-        if (debugLogs) Debug.Log("TrashCan: interacción detenida.");
-    }
+            // Aparece la flor
+            ShowFlower();
+            OnFlowerSpawned?.Invoke();
 
-    IEnumerator InteractionRoutine()
-    {
-        while (interacting)
-        {
-            yield return new WaitForSeconds(timePerPoint);
-
-            if (!interacting) yield break;
-
-            if (Random.value < flowerChance)
+            // Pausar controles del jugador
+            if (pausePlayerMovement && currentPlayer != null)
             {
-                ShowFlower();
-                OnFlowerSpawned?.Invoke();
-
-                if (debugLogs) Debug.Log("TrashCan: apareció la flor — comenzando intento de huida.");
-
-                // Preparar y lanzar skillcheck si está asignado
-                bool skillResultReceived = false;
-                bool skillSuccess = false;
-
-                UnityAction<bool> onResult = (bool success) =>
+                if (currentPlayerController != null)
                 {
-                    skillResultReceived = true;
-                    skillSuccess = success;
-                };
-
-                // Pausar controles inmediatamente
-                if (pausePlayerMovement && currentPlayer != null)
-                {
-                    if (currentPlayerController != null)
-                    {
-                        currentPlayerController.SetControlsEnabled(false);
-                        currentPlayerController.ResetMovementState();
-                    }
-                    else
-                    {
-                        DisableMovementHeuristic(currentPlayer);
-                    }
-                }
-
-                if (quickEventFlower != null)
-                {
-                    // configurar y suscribir
-                    quickEventFlower.requiredPresses = quickRequiredPresses;
-                    quickEventFlower.duration = useRetainDurationAsSkillTime ? flowerRetainDuration : quickEventFlower.duration;
-                    quickEventFlower.OnSkillCheckResult.AddListener(onResult);
-                    quickEventFlower.StartSkillCheck();
+                    currentPlayerController.SetControlsEnabled(false);
+                    currentPlayerController.ResetMovementState();
                 }
                 else
                 {
-                    // si no hay skillcheck asignado, esperar flowerRetainDuration y considerar fallo
-                    StartCoroutine(DelayedSetFalseAfter(flowerRetainDuration, () => { skillResultReceived = true; skillSuccess = false; }));
-                }
-
-                // esperar hasta que haya resultado (éxito/fracaso)
-                while (!skillResultReceived)
-                    yield return null;
-
-                // si existía quickEventFlower, limpiar listener
-                if (quickEventFlower != null)
-                    quickEventFlower.OnSkillCheckResult.RemoveListener(onResult);
-
-                if (skillSuccess)
-                {
-                    // Escapó: ocultar flor, restaurar controles y terminar interacción (huye)
-                    HideExistingFlower();
-                    RestorePlayerMovement();
-
-                    if (debugLogs) Debug.Log("TrashCan: skillcheck exitoso — el jugador huyó de la planta.");
-                    // Opcional: detener la interacción para que no siga generando puntos ahora
-                    interacting = false;
-                    yield break;
-                }
-                else
-                {
-                    // Falló: mantener retenido por el tiempo restante (ya hemos usado el skill duration como límite).
-                    if (debugLogs) Debug.Log("TrashCan: skillcheck fallido — el jugador sigue retenido hasta que termine la flor.");
-                    // Si el flowerLifetime es mayor que flowerRetainDuration, la flor seguirá visible; esperamos flowerRetainDuration si no lo hicimos.
-                    // Ya hemos usado flowerRetainDuration como límite del skillcheck; asegurémonos de que la flor se oculte cuando toque flowerLifetime
-                    // Restauramos movimiento SOLO tras finalizar el tiempo de retención (si se desea)
-                    yield return new WaitForSeconds(Mathf.Max(0f, flowerRetainDuration));
-                    RestorePlayerMovement();
-                    HideExistingFlower();
-                    if (debugLogs) Debug.Log("TrashCan: fin de retención por flor tras fallo del skillcheck.");
-                    // continuar bucle sin otorgar punto
-                    continue;
+                    DisableMovementHeuristic(currentPlayer);
                 }
             }
 
-            // Otorga 1 punto: incrementa contador local y dispara evento
-            localScore += 1;
-            OnScoreGained?.Invoke(1);
-            if (debugLogs) Debug.Log($"TrashCan: +1 punto (total local {localScore})");
+            bool resultReceived = false;
+            bool success = false;
+
+            UnityAction<bool> onResult = (bool r) =>
+            {
+                resultReceived = true;
+                success = r;
+            };
+
+            // Suscribir y arrancar el skillcheck existente
+            quickEventFlower.OnSkillCheckResult.AddListener(onResult);
+            quickEventFlower.requiredPresses = quickRequiredPresses;
+            quickEventFlower.duration = useRetainDurationAsSkillTime ? flowerRetainDuration : quickEventFlower.duration;
+            quickEventFlower.StartSkillCheck();
+
+            // Esperar resultado
+            while (!resultReceived)
+                yield return null;
+
+            // Limpiar listener
+            quickEventFlower.OnSkillCheckResult.RemoveListener(onResult);
+
+            if (success)
+            {
+                // Éxito en el skillcheck -> sumar punto y restaurar movimiento
+                GameManager.Instance?.AddScore(1);
+                HideExistingFlower();
+                RestorePlayerMovement();
+            }
+            else
+            {
+                // Falló el skillcheck -> esperar un tiempo antes de permitir moverse
+                yield return new WaitForSeconds(Mathf.Max(0f, flowerRetainDuration));
+                RestorePlayerMovement();
+                HideExistingFlower();
+            }
         }
+        else
+        {
+            // No aparece flor -> sumar punto inmediatamente
+            GameManager.Instance?.AddScore(1);
+        }
+
+        interactionInProgress = false;
     }
 
-    IEnumerator DelayedSetFalseAfter(float seconds, System.Action set)
-    {
-        yield return new WaitForSeconds(seconds);
-        set?.Invoke();
-    }
-
+    // Muestra la flor y programa su ocultación tras x segundos, cancelando cualquier ocultación previa pendiente
     void ShowFlower()
     {
-        if (flowerObject == null)
-        {
-            if (debugLogs) Debug.LogWarning("TrashCan: ShowFlower llamado pero 'flowerObject' no está asignado.");
-            return;
-        }
-
         flowerObject.SetActive(true);
         CancelInvoke(nameof(HideExistingFlower));
         Invoke(nameof(HideExistingFlower), flowerLifetime);
-
-        if (debugLogs) Debug.Log($"TrashCan: flor '{flowerObject.name}' activada.");
     }
 
+    // Oculta la flor inmediatamente
     void HideExistingFlower()
     {
-        if (flowerObject != null)
-        {
-            flowerObject.SetActive(false);
-            if (debugLogs) Debug.Log($"TrashCan: flor '{flowerObject.name}' desactivada.");
-        }
+        flowerObject.SetActive(false);
     }
 
-    // Heurístico para deshabilitar componentes de movimiento si no se tiene PlayerController
+    // deshabilita movimiento si no hay PlayerController, buscando componentes relacionados con movimiento y desactivándolos (y restaurándolos luego)
     void DisableMovementHeuristic(GameObject player)
     {
         if (player == null) return;
 
         disabledMovementComponents.Clear();
 
+        // Deshabilitar CharacterController si existe
         var cc = player.GetComponent<CharacterController>();
         if (cc != null) cc.enabled = false;
 
+        // Deshabilitar Rigidbody para evitar que el jugador se mueva por fuerzas externas mientras está retenido
         var rb = player.GetComponentInChildren<Rigidbody>();
         if (rb != null)
         {
@@ -265,6 +197,7 @@ public class TrashCan : MonoBehaviour
             rb.isKinematic = true;
         }
 
+        // intentari cubrir otros tipos de movimiento: buscar componentes con nombres relacionados con movimiento y desactivarlos (y restaurarlos luego)
         var monos = player.GetComponents<MonoBehaviour>();
         foreach (var m in monos)
         {
@@ -275,69 +208,54 @@ public class TrashCan : MonoBehaviour
                 if (m == this) continue;
                 m.enabled = false;
                 disabledMovementComponents.Add(m);
-                if (debugLogs) Debug.Log($"TrashCan: deshabilitado componente '{m.GetType().Name}' en jugador (heurístico).");
             }
         }
     }
 
-    void RestoreMovementHeuristic(GameObject player)
-    {
-        if (player == null) return;
-
-        var cc = player.GetComponent<CharacterController>();
-        if (cc != null && !cc.enabled) cc.enabled = true;
-
-        var rb = player.GetComponentInChildren<Rigidbody>();
-        if (rb != null)
-        {
-            rb.isKinematic = false;
-        }
-
-        foreach (var b in disabledMovementComponents)
-        {
-            if (b != null) b.enabled = true;
-        }
-        disabledMovementComponents.Clear();
-    }
-
+    // Restaura el movimiento del jugador, usando PlayerController
     void RestorePlayerMovement()
     {
-        if (currentPlayer != null && pausePlayerMovement)
-        {
-            if (currentPlayerController != null)
-            {
-                currentPlayerController.SetControlsEnabled(true);
-            }
-            else
-            {
-                RestoreMovementHeuristic(currentPlayer);
-            }
+        if (currentPlayer == null) return;
 
-            if (debugLogs) Debug.Log("TrashCan: movimiento del jugador restaurado.");
-        }
+        if (currentPlayerController != null)
+            currentPlayerController.SetControlsEnabled(true);
     }
 
+    // Detecta al jugador entrando en rango, guardando referencias para la interacción
     void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag(playerTag) || other.transform.root.CompareTag(playerTag))
+        PlayerController pc = other.GetComponentInParent<PlayerController>();
+        if (pc != null)
         {
             playerInRange = true;
-            currentPlayer = other.transform.root.gameObject;
-            currentPlayerController = currentPlayer.GetComponent<PlayerController>();
-            if (debugLogs) Debug.Log($"TrashCan: jugador entró en rango (via {other.gameObject.name}). playerInRange=true");
+            currentPlayer = pc.gameObject;
+            currentPlayerController = pc;
         }
     }
 
+    // Asegura limpiar estado si el jugador sale del rango durante una interacción
     void OnTriggerExit(Collider other)
     {
         if (other.CompareTag(playerTag) || other.transform.root.CompareTag(playerTag))
         {
             playerInRange = false;
             RestorePlayerMovement();
-            StopInteraction();
+            interactionInProgress = false;
             currentPlayer = null;
             currentPlayerController = null;
-            if (debugLogs) Debug.Log($"TrashCan: jugador salió de rango (via {other.gameObject.name}). playerInRange=false");
         }
     }
+
+    // Asegura limpiar estado si el objeto se desactiva durante una interacción
+    void OnDisable()
+    {
+        // Asegurar que si hay un skillcheck en curso se limpia
+        if (quickEventFlower != null && quickEventFlower.IsActive)
+        {
+            quickEventFlower.Cancel();
+        }
+    }
+
+    // obtiene la puntuación local del cubo de basura
+    public int GetLocalScore() => localScore;
 }

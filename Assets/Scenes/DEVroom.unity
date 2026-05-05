@@ -1170,6 +1170,7 @@ GameObject:
   - component: {fileID: 498210601}
   - component: {fileID: 498210600}
   - component: {fileID: 498210604}
+  - component: {fileID: 498210605}
   m_Layer: 0
   m_Name: trash
   m_TagString: Untagged
@@ -1260,7 +1261,7 @@ Transform:
   m_GameObject: {fileID: 498210599}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 11.71, y: -0.72, z: 21.3}
+  m_LocalPosition: {x: 11.71, y: -0.97, z: 21.3}
   m_LocalScale: {x: 0.66059, y: 1.3379596, z: 0.66059}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1282,7 +1283,6 @@ MonoBehaviour:
   playerTag: Player
   interactKey: 101
   debugLogs: 1
-  timePerPoint: 2
   OnScoreGained:
     m_PersistentCalls:
       m_Calls: []
@@ -1294,10 +1294,33 @@ MonoBehaviour:
   OnFlowerSpawned:
     m_PersistentCalls:
       m_Calls: []
-  quickEventFlower: {fileID: 0}
+  quickEventFlower: {fileID: 1996331355}
   quickRequiredPresses: 10
   useRetainDurationAsSkillTime: 1
   pausePlayerMovement: 1
+--- !u!136 &498210605
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 498210599}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.47869805
+  m_Height: 1
+  m_Direction: 1
+  m_Center: {x: -0.00668636, y: 0, z: 0.0090085035}
 --- !u!1 &534094293
 GameObject:
   m_ObjectHideFlags: 0
