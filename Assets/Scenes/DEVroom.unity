@@ -1299,7 +1299,7 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
   flowerObject: {fileID: 272732670}
-  flowerChance: 0.713
+  flowerChance: 0.2
   flowerRetainDuration: 3
   flowerLifetime: 4
   deactivateFlowerAtStart: 1
@@ -1910,8 +1910,8 @@ MonoBehaviour:
   - {fileID: 305608412}
   waitAtPoint: 2
   catchDistance: 1.5
-  viewDistance: 12
-  viewAngle: 90
+  viewDistance: 15
+  viewAngle: 80
   eyeHeight: 1.7
   playerMask:
     serializedVersion: 2
@@ -1924,7 +1924,7 @@ MonoBehaviour:
   chaseSpeed: 5
   searchDuration: 5
   searchRadius: 5
-  showVisionGizmo: 0
+  showVisionGizmo: 1
 --- !u!195 &733147148
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -2440,7 +2440,7 @@ GameObject:
   m_Component:
   - component: {fileID: 960727316}
   m_Layer: 0
-  m_Name: PatrolPoint1 (1)
+  m_Name: PatrolPoint1 CITIZEN
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4288,7 +4288,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2096807183}
   m_Layer: 0
-  m_Name: PatrolPoint3 (1)
+  m_Name: PatrolPoint2 CITIZEN
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4315,25 +4315,25 @@ SceneRoots:
   m_Roots:
   - {fileID: 410087041}
   - {fileID: 832575519}
+  - {fileID: 764993010}
+  - {fileID: 733147152}
+  - {fileID: 1873264520}
+  - {fileID: 498210603}
+  - {fileID: 1443066819}
+  - {fileID: 554397230}
+  - {fileID: 1057578332}
+  - {fileID: 550418861}
+  - {fileID: 1472774467}
+  - {fileID: 1634956740}
+  - {fileID: 1996331351}
+  - {fileID: 489977879}
+  - {fileID: 1233890900}
+  - {fileID: 305608412}
+  - {fileID: 960727316}
+  - {fileID: 2096807183}
+  - {fileID: 1608267}
   - {fileID: 1525166553}
   - {fileID: 657138029}
   - {fileID: 1278735042}
   - {fileID: 618493161}
   - {fileID: 816423655}
-  - {fileID: 764993010}
-  - {fileID: 554397230}
-  - {fileID: 1608267}
-  - {fileID: 733147152}
-  - {fileID: 1873264520}
-  - {fileID: 489977879}
-  - {fileID: 960727316}
-  - {fileID: 1233890900}
-  - {fileID: 305608412}
-  - {fileID: 2096807183}
-  - {fileID: 1057578332}
-  - {fileID: 550418861}
-  - {fileID: 1472774467}
-  - {fileID: 1634956740}
-  - {fileID: 1443066819}
-  - {fileID: 498210603}
-  - {fileID: 1996331351}
