@@ -1,78 +1,71 @@
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.InputSystem;
+using UnityEngine.Events;
 
 public class SkillCheck : MonoBehaviour
 {
-    [Header("ConfiguraciÃ³n UI")]
-    public RectTransform needle;
-    public Image successZoneImage;
+    [Header("Configuración Visual")]
+    public RectTransform safeZone;
+    public float moveSpeed = 100f;
+    public float hitboxTolerancia = 20f;
 
-    [Header("Ajustes del Juego")]
-    public float rotationSpeed = 150f;
-    public float successWindowSize = 0.1f;
+    // Evento que notifica el resultado: true = éxito, false = fallo
+    public UnityEvent<bool> OnSkillCheckResult;
 
-    private float _currentAngle;
-    private bool _isActive;
-    private Citizen _currentCitizen;
+    private RectTransform pointerTransform;
+    private bool active = false;
 
     void Start()
     {
-        gameObject.SetActive(false);
-    }
-
-    public void StartSkillCheck(Citizen citizen)
-    {
-        _currentCitizen = citizen;
-        gameObject.SetActive(true);
-        PrepareSkillCheck();
-    }
-
-    private void PrepareSkillCheck()
-    {
-        float startAngle = Random.Range(40f, 300f);
-        successZoneImage.fillAmount = successWindowSize;
-        successZoneImage.rectTransform.localRotation = Quaternion.Euler(0, 0, -startAngle);
-
-        _currentAngle = 0;
-        _isActive = true;
+        pointerTransform = GetComponent<RectTransform>();
     }
 
     void Update()
     {
-        if (!_isActive) return;
+        if (!active) return;
 
-        _currentAngle += rotationSpeed * Time.unscaledDeltaTime;
-        if (_currentAngle >= 360f) _currentAngle -= 360f;
+        // Usar unscaledDeltaTime para que funcione mientras el juego está pausado (timeScale = 0)
+        transform.Rotate(0, 0, -moveSpeed * Time.unscaledDeltaTime);
 
-        needle.localRotation = Quaternion.Euler(0, 0, -_currentAngle);
-
-        if (Keyboard.current.spaceKey.wasPressedThisFrame)
+        // detectar input con el nuevo InputSystem
+        if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
         {
             CheckSuccess();
         }
     }
 
+    // Inicia la prueba
+    public void StartSkillCheck()
+    {
+        active = true;
+        // opcional: reiniciar rotación del puntero si lo deseas
+        // pointerTransform.rotation = Quaternion.identity;
+    }
+
+    // Cancela / detiene la prueba (si es necesario)
+    public void StopSkillCheck()
+    {
+        active = false;
+    }
+
     void CheckSuccess()
     {
-        _isActive = false;
+        active = false;
 
-        float winRotation = successZoneImage.rectTransform.localEulerAngles.z;
-        float correctedTargetCenter = -winRotation + (successWindowSize * 360f / 2f);
-        float diff = Mathf.Abs(Mathf.DeltaAngle(_currentAngle, correctedTargetCenter));
-        float tolerance = (successWindowSize * 360f) / 2f;
+        float angleDifference = Quaternion.Angle(pointerTransform.rotation, safeZone.rotation);
 
-        if (diff <= tolerance)
+        bool success = angleDifference <= hitboxTolerancia;
+
+        if (success)
         {
-            Debug.Log("Â¡Ã‰XITO!");
-            _currentCitizen.OnStealResult(true); 
+            Debug.Log("SkillCheck: Éxito.");
         }
         else
         {
-            Debug.Log("Â¡FALLO!");
-            _currentCitizen.OnStealResult(false);
+            Debug.Log("SkillCheck: Fallo.");
         }
 
-        gameObject.SetActive(false);
+        // Notificar resultado
+        if (OnSkillCheckResult != null) OnSkillCheckResult.Invoke(success);
     }
 }
