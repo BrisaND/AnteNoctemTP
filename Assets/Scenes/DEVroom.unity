@@ -2876,8 +2876,7 @@ PrefabInstance:
       propertyPath: m_Name
       value: guardia
       objectReference: {fileID: 0}
-    m_RemovedComponents:
-    - {fileID: 5544880246915493832, guid: f0ac6fb9ada49f24683e3eca20786103, type: 3}
+    m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
@@ -3314,8 +3313,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 29db65423c4445442b8359c5320e13fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: {fileID: 0}
-  wardens: []
+  player: {fileID: 1740512297}
+  wardens:
+  - {fileID: 918673667}
   fontSize: 16
   textColor: {r: 1, g: 1, b: 1, a: 1}
   bgColor: {r: 0, g: 0, b: 0, a: 0.6}
@@ -6174,7 +6174,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1075565693522725034, guid: 8f9da1416d010424fbe70ed2b4889a2b, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4677338203630723221, guid: 8f9da1416d010424fbe70ed2b4889a2b, type: 3}
       propertyPath: m_Enabled
