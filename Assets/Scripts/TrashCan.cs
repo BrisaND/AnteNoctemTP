@@ -142,7 +142,7 @@ public class TrashCan : MonoBehaviour
             if (success)
             {
                 // Éxito en el skillcheck -> sumar punto y restaurar movimiento
-                GameManager.Instance?.AddScore(1);
+                AwardStealPointsFromTrashCan();
                 HideExistingFlower();
                 RestorePlayerMovement();
             }
@@ -156,8 +156,8 @@ public class TrashCan : MonoBehaviour
         }
         else
         {
-            // No aparece flor -> sumar punto inmediatamente
-            GameManager.Instance?.AddScore(1);
+            // No aparece flor -> robo inmediato
+            AwardStealPointsFromTrashCan();
         }
 
         interactionInProgress = false;
@@ -219,6 +219,18 @@ public class TrashCan : MonoBehaviour
 
         if (currentPlayerController != null)
             currentPlayerController.SetControlsEnabled(true);
+    }
+
+    void AwardStealPointsFromTrashCan()
+    {
+        if (RobberySystem.Instance != null)
+        {
+            RobberySystem.Instance.AwardStealPoints("Robo en basurero");
+        }
+        else if (GameManager.Instance != null)
+        {
+            GameManager.Instance.AddScore(Random.Range(5, 16));
+        }
     }
 
     // Detecta al jugador entrando en rango, guardando referencias para la interacción

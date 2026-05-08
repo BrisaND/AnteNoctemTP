@@ -67,6 +67,7 @@
     <Compile Include="Assets\Scripts\PlayerController.cs" />
     <Compile Include="Assets\Scripts\WardenAI.cs" />
     <Compile Include="Assets\Scripts\EventFlower.cs" />
+    <Compile Include="Assets\Scripts\StealableObject.cs" />
     <Compile Include="Assets\MenuScripts\PauseManager.cs" />
     <Compile Include="Assets\Scripts\SurveillanceCamera.cs" />
     <Compile Include="Assets\Scripts\CitizenAI.cs" />
@@ -76,6 +77,7 @@
     <Compile Include="Assets\Scripts\SkillCheck.cs" />
     <Compile Include="Assets\Scripts\DebugHUD.cs" />
     <Compile Include="Assets\Scripts\QuickEventManager.cs" />
+    <Compile Include="Assets\Scripts\RobberySystem.cs" />
     <Compile Include="Assets\Scripts\PressurePlate.cs" />
     <Compile Include="Assets\Scripts\GameManager.cs" />
     <Compile Include="Assets\Scripts\GuardDogAI.cs" />

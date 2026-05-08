@@ -16,6 +16,7 @@ public class GameManager : MonoBehaviour
     [Header("Score")]
     public int targetScore = 100;
     public int currentScore { get; private set; }
+    public bool autoWinOnTargetScore = true;
 
     [Header("Estados")]
     public DayState dayState { get; private set; } = DayState.Dia;
@@ -79,9 +80,14 @@ public class GameManager : MonoBehaviour
         OnScoreChanged?.Invoke(currentScore);
         if (currentScore >= targetScore && gameState == GameState.Playing)
         {
-            // todavia no gana hasta que llegue al pueblo (lo hacemos despues)
-            // por ahora solo lo marcamos
-            Debug.Log("Cuota alcanzada! Vuelve al pueblo.");
+            if (autoWinOnTargetScore)
+            {
+                Victory();
+            }
+            else
+            {
+                Debug.Log("Cuota alcanzada! Vuelve al pueblo.");
+            }
         }
     }
 

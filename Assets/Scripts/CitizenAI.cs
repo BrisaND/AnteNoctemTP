@@ -106,7 +106,14 @@ public class CitizenAI : MonoBehaviour
     {
         if (success)
         {
-            if (GameManager.Instance != null) GameManager.Instance.AddScore(1);
+            if (RobberySystem.Instance != null)
+            {
+                RobberySystem.Instance.AwardStealPoints("Robo al ciudadano");
+            }
+            else if (GameManager.Instance != null)
+            {
+                GameManager.Instance.AddScore(Random.Range(5, 16));
+            }
             if (currentState != CitizenState.Patrolling) ResumePatrol();
         }
         else
