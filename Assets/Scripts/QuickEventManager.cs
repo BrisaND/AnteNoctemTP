@@ -5,13 +5,11 @@ public class QuickEventManager : MonoBehaviour
     public static QuickEventManager Instance { get; private set; }
 
     [Header("UI")]
-    public GameObject quickEventCanvas;
-    public SkillCheck skillCheck;
+    public GameObject quickEventCanvas; // asignar el Canvas del quick event
+    public SkillCheck skillCheck;       // referencia al SkillCheck dentro del canvas
 
+    // Ciudadano que inició el evento
     private CitizenAI currentCitizen;
-    private bool isActive = false;
-
-    public bool IsActive => isActive;
 
     void Awake()
     {
@@ -24,55 +22,42 @@ public class QuickEventManager : MonoBehaviour
         if (quickEventCanvas != null) quickEventCanvas.SetActive(false);
         if (skillCheck != null)
         {
+            // asegurar que no quede suscrito persistentemente
             skillCheck.OnSkillCheckResult.RemoveAllListeners();
         }
     }
 
+    // Llamar desde CitizenAI cuando el jugador interactúa
     public void StartQuickEvent(CitizenAI citizen)
     {
         if (quickEventCanvas == null || skillCheck == null) return;
 
-        // No iniciar si el juego no esta en Playing
-        if (GameManager.Instance != null &&
-            GameManager.Instance.gameState != GameManager.GameState.Playing)
-        {
-            return;
-        }
-
-        // No iniciar si esta pausado
-        if (PauseManager.Instance != null && PauseManager.Instance.IsPaused)
-        {
-            return;
-        }
-
         currentCitizen = citizen;
-        isActive = true;
+
         quickEventCanvas.SetActive(true);
 
+        // pausar juego (SkillCheck usa unscaledDeltaTime)
         Time.timeScale = 0f;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
+        // subscribir al resultado
         skillCheck.OnSkillCheckResult.AddListener(HandleSkillResult);
         skillCheck.StartSkillCheck();
     }
 
     void HandleSkillResult(bool success)
     {
+        // limpiar suscripción
         skillCheck.OnSkillCheckResult.RemoveListener(HandleSkillResult);
 
+        // restaurar UI y tiempo
         quickEventCanvas.SetActive(false);
-        isActive = false;
+        Time.timeScale = 1f;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
 
-        // Solo restaurar el tiempo y el cursor si el juego sigue en Playing
-        if (GameManager.Instance == null ||
-            GameManager.Instance.gameState == GameManager.GameState.Playing)
-        {
-            Time.timeScale = 1f;
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-        }
-
+        // notificar al ciudadano
         if (currentCitizen != null)
         {
             currentCitizen.OnPlayerInteractionResult(success);

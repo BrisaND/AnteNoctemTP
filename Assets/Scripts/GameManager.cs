@@ -91,15 +91,6 @@ public class GameManager : MonoBehaviour
         gameState = GameState.GameOver;
         Debug.Log("GAME OVER: " + reason);
         OnGameStateChanged?.Invoke(gameState);
-
-        // Cancelar cualquier QuickEvent en curso
-        if (QuickEventManager.Instance != null && QuickEventManager.Instance.IsActive)
-        {
-            // forzamos el cierre del canvas si quedo abierto
-            if (QuickEventManager.Instance.quickEventCanvas != null)
-                QuickEventManager.Instance.quickEventCanvas.SetActive(false);
-        }
-
         Time.timeScale = 0f;
         UnlockCursor();
     }
