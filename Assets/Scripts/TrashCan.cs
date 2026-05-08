@@ -50,10 +50,8 @@ public class TrashCan : MonoBehaviour
 
     void Start()
     {
-        // Asegurarse de que flor y skillcheck empiezan desactivados
         if (deactivateFlowerAtStart) flowerObject.SetActive(false);
 
-        // Aplicar parámetros al skillcheck existente
         quickEventFlower.requiredPresses = quickRequiredPresses;
         quickEventFlower.duration = useRetainDurationAsSkillTime ? flowerRetainDuration : quickEventFlower.duration;
 
