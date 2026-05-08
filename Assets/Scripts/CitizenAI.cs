@@ -90,8 +90,15 @@ public class CitizenAI : MonoBehaviour
 
     void StartInteraction()
     {
-        // No forzamos que el agente se detenga aquí; QuickEventManager pausará el tiempo
-        if (QuickEventManager.Instance != null) {QuickEventManager.Instance.StartQuickEvent(this);}
+        // No iniciar si no hay QuickEventManager o ya hay un evento activo
+        if (QuickEventManager.Instance == null) return;
+        if (QuickEventManager.Instance.IsActive) return;
+
+        // No iniciar si el juego no esta en Playing
+        if (GameManager.Instance != null &&
+            GameManager.Instance.gameState != GameManager.GameState.Playing) return;
+
+        QuickEventManager.Instance.StartQuickEvent(this);
     }
 
     // Invocado por QuickEventManager cuando termina (true = acierto)

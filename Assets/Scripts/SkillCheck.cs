@@ -9,7 +9,6 @@ public class SkillCheck : MonoBehaviour
     public float moveSpeed = 100f;
     public float hitboxTolerancia = 20f;
 
-    // Evento que notifica el resultado: true = éxito, false = fallo
     public UnityEvent<bool> OnSkillCheckResult;
 
     private RectTransform pointerTransform;
@@ -24,10 +23,10 @@ public class SkillCheck : MonoBehaviour
     {
         if (!active) return;
 
-        // Usar unscaledDeltaTime para que funcione mientras el juego está pausado (timeScale = 0)
+        // Usar unscaledDeltaTime para que funcione mientras el juego está pausado
         transform.Rotate(0, 0, -moveSpeed * Time.unscaledDeltaTime);
 
-        // detectar input con el nuevo InputSystem
+        // detectar input
         if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
         {
             CheckSuccess();
@@ -38,14 +37,6 @@ public class SkillCheck : MonoBehaviour
     public void StartSkillCheck()
     {
         active = true;
-        // opcional: reiniciar rotación del puntero si lo deseas
-        // pointerTransform.rotation = Quaternion.identity;
-    }
-
-    // Cancela / detiene la prueba (si es necesario)
-    public void StopSkillCheck()
-    {
-        active = false;
     }
 
     void CheckSuccess()
