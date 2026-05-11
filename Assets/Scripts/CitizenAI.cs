@@ -17,7 +17,7 @@ public class CitizenAI : MonoBehaviour
     public CitizenState currentState { get; private set; } = CitizenState.Patrolling;
 
     private float _detentionDuration = 4f; //Detencion (si falla)
-    private float _interactDistance = 2f; //Distancia de interacción con el player
+    private float _interactDistance = 20f; //Distancia de interacción con el player
     private NavMeshAgent agent;
     private Transform player;
     private PlayerController playerCtrl;

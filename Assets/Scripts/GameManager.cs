@@ -108,6 +108,7 @@ public class GameManager : MonoBehaviour
 
         Time.timeScale = 0f;
         UnlockCursor();
+        SceneManager.LoadScene("GameOver");
     }
 
     public void Victory()

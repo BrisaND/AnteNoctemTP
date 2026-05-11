@@ -112,7 +112,7 @@ public class DebugHUD : MonoBehaviour
         if (GameManager.Instance != null)
         {
             var gs = GameManager.Instance.gameState;
-            if (gs == GameManager.GameState.GameOver || gs == GameManager.GameState.Victory)
+            if (gs == GameManager.GameState.Victory)
             {
                 DrawEndScreen(gs);
             }
