@@ -35,6 +35,25 @@ public class ShoulderCamera : MonoBehaviour
     private float yaw = 0f;
     private float pitch = 10f;
 
+    private bool snapNextFrame = false;
+
+
+    [Header("Configuración Primera Persona (Escondite)")]
+    [Tooltip("Ángulo máximo en grados que el jugador puede mirar a la izquierda o derecha a través de la ranura")]
+    public float limitAngleSlot = 45f;
+
+    // NUEVAS VARIABLES PARA PRIMERA PERSONA
+    private bool isFirstPerson = false;
+    private Transform fpTarget;
+    private float fpMinYaw;
+    private float fpMaxYaw;
+
+    // NUEVO: Método público para llamar desde el PlayerController
+    public void SnapToTarget()
+    {
+        snapNextFrame = true;
+    }
+
     void Start()
     {
         if (lockCursor)
@@ -72,10 +91,15 @@ public class ShoulderCamera : MonoBehaviour
             yaw += Input.GetAxis("Mouse X") * mouseSensitivityX * Time.deltaTime;
             pitch -= Input.GetAxis("Mouse Y") * mouseSensitivityY * Time.deltaTime;
             pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
+
+            if (isFirstPerson)
+            {
+                yaw = Mathf.Clamp(yaw, fpMinYaw, fpMaxYaw);
+            }
         }
 
-        // rotar al jugador con el yaw
-        if (rotatePlayerWithCamera && playerBody != null)
+        // rotar al jugador con el yaw solo si no esta en primera persona (para evitar que gire el cuerpo dentro del escondite)
+        if (rotatePlayerWithCamera && playerBody != null && !isFirstPerson)
         {
             playerBody.rotation = Quaternion.Euler(0f, yaw, 0f);
         }
@@ -87,6 +111,14 @@ public class ShoulderCamera : MonoBehaviour
 
         // calculamos rotacion deseada
         Quaternion targetRot = Quaternion.Euler(pitch, yaw, 0f);
+
+        // NUEVO: Comportamiento de Primera Persona dentro del tacho
+        if (isFirstPerson && fpTarget != null)
+        {
+            transform.position = fpTarget.position;
+            transform.rotation = targetRot;
+            return; // Saltamos todo el cálculo de tercera persona y colisiones
+        }
 
         // pivot en el hombro del jugador
         Vector3 pivot = target.position
@@ -106,8 +138,46 @@ public class ShoulderCamera : MonoBehaviour
             desiredPos = pivot + dirFromPivot.normalized * adjustedDist;
         }
 
-        // suavizado
-        transform.position = Vector3.Lerp(transform.position, desiredPos, positionSmooth * Time.deltaTime);
-        transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotationSmooth * Time.deltaTime);
+        // NUEVA LÓGICA DE SUAVIZADO/SALTO
+        if (snapNextFrame)
+        {
+            // Salto instantáneo, sin Lerp
+            transform.position = desiredPos;
+            transform.rotation = targetRot;
+            snapNextFrame = false; // Apagamos la bandera para que el suavizado vuelva en el siguiente frame
+        }
+        else
+        {
+            // Suavizado normal
+            transform.position = Vector3.Lerp(transform.position, desiredPos, positionSmooth * Time.deltaTime);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotationSmooth * Time.deltaTime);
+        }
+
+    }
+    // MÉTODOS PÚBLICOS PARA ACTIVAR/DESACTIVAR DESDE EL JUGADOR
+    public void EnterFirstPersonMode(Transform cameraPoint)
+    {
+        fpTarget = cameraPoint;
+        isFirstPerson = true;
+
+        // Seteamos el centro de visión hacia donde apunte la ranura
+        yaw = cameraPoint.eulerAngles.y;
+        pitch = cameraPoint.eulerAngles.x;
+
+        // Calculamos los límites izquierdo/derecho basados en la ranura
+        fpMinYaw = yaw - limitAngleSlot;
+        fpMaxYaw = yaw + limitAngleSlot;
+    }
+
+    public void ExitFirstPersonMode()
+    {
+        isFirstPerson = false;
+        fpTarget = null;
+
+        // Sincronizamos el yaw actual con el cuerpo del jugador para que no gire bruscamente al salir
+        if (playerBody != null)
+        {
+            yaw = playerBody.eulerAngles.y;
+        }
     }
 }

@@ -69,8 +69,10 @@ public class WardenAI : MonoBehaviour
     {
         if (GameManager.Instance != null && GameManager.Instance.gameState != GameManager.GameState.Playing) return;
 
-        bool sees = CanSeePlayer();
-        bool hears = canHear && CanHearPlayer();
+        // NUEVO: Si el jugador está escondido con éxito, el policía pierde visión y audición directa.
+        // Solo puede llegar al tacho si fue alertado previamente por el perro o un ciudadano.
+        bool sees = (playerCtrl != null && playerCtrl.isHidden) ? false : CanSeePlayer();
+        bool hears = (playerCtrl != null && playerCtrl.isHidden) ? false : (canHear && CanHearPlayer());
 
         switch (currentState)
         {
@@ -87,7 +89,7 @@ public class WardenAI : MonoBehaviour
                 }
                 else if (HasReachedDestination())
                 {
-                    StartSearch();
+                    StartSearch(); // Si llega al tacho y no te ve (porque estás adentro), empieza a buscar alrededor
                 }
                 break;
 
@@ -97,8 +99,9 @@ public class WardenAI : MonoBehaviour
                 break;
         }
 
-        // chequeo de contacto fuera del switch, asi pasa en cualquier estado
-        if (player != null && Vector3.Distance(transform.position, player.position) < catchDistance)
+        // MODIFICADO: El chequeo de contacto físico no te mata si estás escondido dentro del tacho.
+        // Así el policía se parará al lado del tacho sin darte Game Over automático, dándote la chance de ver al policía desde la ranura en primera persona.
+        if (player != null && !playerCtrl.isHidden && Vector3.Distance(transform.position, player.position) < catchDistance)
         {
             TriggerGameOver();
         }

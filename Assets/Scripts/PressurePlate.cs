@@ -56,11 +56,14 @@ public class PressurePlate : MonoBehaviour
         var pc = other.GetComponent<PlayerController>();
         if (pc != null)
         {
-            if (pc.isCrouching || pc.currentState != PlayerController.MoveState.Running)
+            // --- AQUÍ ESTÁ EL CAMBIO ---
+            // Si no está corriendo, simplemente salimos de la función y no pasa nada
+            if (pc.currentState != PlayerController.MoveState.Running)
             {
                 return;
             }
 
+            // Si llegó aquí, es porque SÍ está corriendo, así que ejecutamos la caída
             StartCoroutine(HandleKnockDownForcingRotation(pc));
             lastTriggeredAt[t] = Time.time;
             return;
@@ -86,73 +89,30 @@ public class PressurePlate : MonoBehaviour
         if (knockedPlayers.Contains(t)) yield break;
         knockedPlayers.Add(t);
 
-        // Deshabilitar controles
         pc.SetControlsEnabled(false);
 
+        // 1. OBTENER EL ANIMATOR
         Animator anim = pc.GetComponentInChildren<Animator>();
-        if (anim != null) anim.enabled = false;
 
+        // 2. ACTIVAR LA ANIMACIÓN EN LUGAR DE ROTAR EL TRANSFORM
+        if (anim != null)
+        {
+            anim.enabled = true; // Asegúrate de que esté habilitado
+            anim.SetTrigger("FallTrigger"); // <<< CREA ESTE TRIGGER EN TU ANIMATOR
+        }
+
+        // Opcional: Aplicar impulso físico (sin rotar el objeto manualmente)
         Rigidbody rb = pc.GetComponent<Rigidbody>();
-        bool hadRigidbody = rb != null;
-
-        if (hadRigidbody && applyPhysicalImpulse)
+        if (rb != null && applyPhysicalImpulse)
         {
             Vector3 forward = (t.forward + Vector3.up * 0.1f).normalized;
             rb.AddForce(forward * forwardImpulse + Vector3.up * upImpulse, ForceMode.Impulse);
         }
 
-        bool prevIsKinematic = false;
-        RigidbodyConstraints prevConstraints = RigidbodyConstraints.None;
-        if (hadRigidbody)
-        {
-            prevIsKinematic = rb.isKinematic;
-            prevConstraints = rb.constraints;
+        // 3. ESPERAR EL TIEMPO DE LA CAÍDA (knockDownDuration)
+        yield return new WaitForSeconds(knockDownDuration);
 
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-
-            rb.isKinematic = true;
-        }
-
-        // Forzar rotación a X = 90° (mantener Y actual)
-        Quaternion start = t.rotation;
-        float yaw = t.eulerAngles.y;
-        Quaternion target = Quaternion.Euler(90f, yaw, 0f);
-
-        // Suavizado de rotación
-        float elapsed = 0f;
-        while (elapsed < rotationBlendTime)
-        {
-            elapsed += Time.deltaTime;
-            float p = Mathf.Clamp01(elapsed / rotationBlendTime);
-            t.rotation = Quaternion.Slerp(start, target, p);
-            yield return null;
-        }
-
-        // Mantener tumbado durante x tiempo
-        float timer = 0f;
-        while (timer < knockDownDuration)
-        {
-            // Se fuerza constantemente la rotación para evitar fallos
-            t.rotation = target;
-
-            timer += Time.deltaTime;
-            yield return null;
-        }
-
-        // Restaurar física y controles
-        if (hadRigidbody)
-        {
-            rb.isKinematic = prevIsKinematic;
-            rb.constraints = prevConstraints;
-
-            // Enderezar al levantarse
-            Vector3 euler = t.eulerAngles;
-            t.rotation = Quaternion.Euler(0f, euler.y, 0f);
-        }
-
-        if (anim != null) anim.enabled = true;
-
+        // 4. RESTAURAR CONTROLES
         pc.SetControlsEnabled(true);
         knockedPlayers.Remove(t);
     }

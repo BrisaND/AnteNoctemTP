@@ -97,7 +97,6 @@ public class GameManager : MonoBehaviour
         gameState = GameState.GameOver;
         Debug.Log("GAME OVER: " + reason);
         OnGameStateChanged?.Invoke(gameState);
-
         // Cancelar cualquier QuickEvent en curso
         if (QuickEventManager.Instance != null && QuickEventManager.Instance.IsActive)
         {
@@ -105,8 +104,7 @@ public class GameManager : MonoBehaviour
             if (QuickEventManager.Instance.quickEventCanvas != null)
                 QuickEventManager.Instance.quickEventCanvas.SetActive(false);
         }
-
-        Time.timeScale = 0f;
+        Time.timeScale = 1f;
         UnlockCursor();
     }
 

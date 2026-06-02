@@ -53,6 +53,7 @@ public class GuardDogAI : MonoBehaviour
     private ScentMarker currentTarget;
     private bool minigameActive = false;
     private bool isStunned = false;
+    private bool wasPlayerHidden = false;
 
     void Awake()
     {
@@ -74,11 +75,39 @@ public class GuardDogAI : MonoBehaviour
     {
         if (GameManager.Instance != null && GameManager.Instance.gameState != GameManager.GameState.Playing) return;
 
+        if (playerCtrl != null)
+        {
+            if (wasPlayerHidden && !playerCtrl.isHidden)
+            {
+                // Descongelamos al agente de navegación
+                if (agent != null) agent.isStopped = false;
+
+                // Evaluamos la distancia. Si sales frente al perro, te persigue.
+                if (Vector3.Distance(transform.position, player.position) <= scentRange)
+                {
+                    currentState = DogState.Tracking;
+                    Debug.Log("El perro retoma la persecución.");
+                }
+                else
+                {
+                    ReturnToPatrol();
+                }
+            }
+            wasPlayerHidden = playerCtrl.isHidden;
+
+            // Prioridad absoluta si el jugador sigue escondido
+            if (playerCtrl.isHidden)
+            {
+                CheckHidingSpots();
+                return; // Corta el comportamiento normal
+            }
+        }
+
         switch (currentState)
         {
             case DogState.Patrolling:
                 Patrol();
-                if (!isStunned) CheckForScent(); // no rastrea si esta aturdido
+                if (!isStunned) CheckForScent();
                 CheckBite();
                 break;
 
@@ -194,10 +223,73 @@ public class GuardDogAI : MonoBehaviour
     void CheckBite()
     {
         if (player == null) return;
-        if (isStunned) return; // no muerde si esta aturdido
+        if (isStunned) return;
+
+        // MODIFICADO: Si el jugador está escondido, el perro no puede iniciar la mordida ni arrastrarlo
+        if (playerCtrl != null && playerCtrl.isHidden) return;
+
         if (Vector3.Distance(transform.position, player.position) < biteDistance)
         {
             StartDragging();
+        }
+    }
+
+    void CheckHidingSpots()
+    {
+        if (playerCtrl != null && playerCtrl.isHidden)
+        {
+            float distanceToPlayer = Vector3.Distance(transform.position, player.position);
+
+            // Si el jugador se esconde dentro de su rango de olfato/visión
+            if (distanceToPlayer <= scentRange)
+            {
+                // se verifica si el tacho actual del jugador es vulnerable
+                bool esTachoVulnerable = playerCtrl.currentHidingSpot != null && playerCtrl.currentHidingSpot.isVulnerableToDog;
+
+                // Si el tacho es de los tirados y el perro ya viene persiguiendo al jugador , el perro lo agarra sin necesidad de esperar el minijuego
+                if (esTachoVulnerable && currentState == DogState.Tracking)
+                {
+                    Debug.Log("El perro se mete al tacho tirado a sacarte.");
+
+                    // Forzamos la salida del estado oculto del jugador de manera inmediata
+                    // Volvemos a activar su render, colisiones y cámara para que la animación de arrastrar funcione bien
+                    playerCtrl.ExitHide(playerCtrl.currentHidingSpot.puntoSalida);
+
+                    // Iniciamos el arrastre instantáneo hacia el Warden
+                    StartDragging();
+                    return;
+                }
+                // Detener el agente por completo en su posición actual frente al tacho
+                agent.isStopped = true;
+                agent.velocity = Vector3.zero;
+
+                // Hacer que el perro rote suavemente para mirar fijamente al tacho
+                Vector3 dirToPlayer = (player.position - transform.position).normalized;
+                dirToPlayer.y = 0; // Evita que el perro se incline hacia arriba o abajo
+                if (dirToPlayer != Vector3.zero)
+                {
+                    transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(dirToPlayer), Time.deltaTime * 5f);
+                }
+
+                //Alertar constantemente al Warden de la posición del tacho
+                Transform warden = FindNearestWardenTransform();
+                if (warden != null)
+                {
+                    var wAI = warden.GetComponent<WardenAI>();
+                    if (wAI != null)
+                    {
+                        // Le manda la posición exacta del tacho para que el policía camine hacia ahí
+                        wAI.AlertToPosition(player.position);
+                        Debug.Log("El perro detectó el rastro en el tacho y llamó al Warden.");
+                    }
+                }
+                else
+                {
+                    // Si el jugador se escondió lejísimos del perro fuera de su rango, el perro sigue patrullando
+                    if (agent.isStopped) agent.isStopped = false;
+                    ReturnToPatrol();
+                }
+            }
         }
     }
 

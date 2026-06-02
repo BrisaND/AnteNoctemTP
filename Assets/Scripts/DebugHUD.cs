@@ -1,5 +1,7 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using static GameManager;
 
 public class DebugHUD : MonoBehaviour
 {
@@ -58,7 +60,7 @@ public class DebugHUD : MonoBehaviour
 
         int lineH = fontSize + 6;
 
-        // ===== Panel arriba izq: GameManager =====
+        // Panel arriba izq: GameManager
         if (GameManager.Instance != null)
         {
             int lines = 4;
@@ -75,7 +77,7 @@ public class DebugHUD : MonoBehaviour
             DrawLine(x, ref y, lineH, "ESTADO: " + gm.gameState);
         }
 
-        // ===== Panel arriba der: Player =====
+        // Panel arriba der: Player 
         if (player != null)
         {
             int lines = 3;
@@ -90,7 +92,7 @@ public class DebugHUD : MonoBehaviour
             DrawLine(x, ref y, lineH, "Crouch: " + (player.isCrouching ? "SI" : "NO"));
         }
 
-        // ===== Panel abajo izq: Wardens =====
+        //  Panel abajo izq: Wardens
         if (wardens.Count > 0)
         {
             int lines = wardens.Count + 1; // +1 por el header
@@ -108,13 +110,16 @@ public class DebugHUD : MonoBehaviour
             }
         }
 
-        // ===== Pantalla Game Over / Victory =====
+        // Pantalla Game Over / Victory
         if (GameManager.Instance != null)
         {
             var gs = GameManager.Instance.gameState;
-            if (gs == GameManager.GameState.GameOver || gs == GameManager.GameState.Victory)
+            if (gs == GameManager.GameState.GameOver)
             {
-                DrawEndScreen(gs);
+                SceneManager.LoadScene("GameOver");
+            } else if (gs == GameManager.GameState.Victory)
+            {
+                DrawEndScreen(GameState.Victory);
             }
         }
     }
