@@ -92,7 +92,7 @@ public class TrashCan : MonoBehaviour
         StartCoroutine(HandleSingleInteraction());
     }
 
-    // Cmaneja toda la lógica de una interacción completa, asegurando que no se pueden solapar múltiples interacciones
+    // Maneja toda la lógica de una interacción completa, asegurando que no se pueden solapar múltiples interacciones
     IEnumerator HandleSingleInteraction()
     {
         interactionInProgress = true;
@@ -129,7 +129,20 @@ public class TrashCan : MonoBehaviour
             // Suscribir y arrancar el skillcheck existente
             quickEventFlower.OnSkillCheckResult.AddListener(onResult);
             quickEventFlower.requiredPresses = quickRequiredPresses;
-            quickEventFlower.duration = useRetainDurationAsSkillTime ? flowerRetainDuration : quickEventFlower.duration;
+
+            // --- MODIFICACIÓN PARA LOS GUANTES (POWER-UP) ---
+            // Calculamos el tiempo base del SkillCheck
+            float tiempoSkillCheck = useRetainDurationAsSkillTime ? flowerRetainDuration : quickEventFlower.duration;
+
+            // Si el jugador tiene puestos los guantes, le sumamos los segundos extra al SkillCheck
+            if (currentPlayerController != null)
+            {
+                tiempoSkillCheck += currentPlayerController.escapeTimeBonus;
+            }
+
+            quickEventFlower.duration = tiempoSkillCheck;
+            // -------------------------------------------------
+
             quickEventFlower.StartSkillCheck();
 
             // Esperar resultado

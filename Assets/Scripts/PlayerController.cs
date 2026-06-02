@@ -34,6 +34,11 @@ public class PlayerController : MonoBehaviour
     public float transitionDuration = 0.8f; // Tiempo en segundos que tarda en meterse/salir
     private Coroutine hidingCoroutine;
 
+    [Header("Power-Ups / Beneficios")]
+    public float noiseMultiplier = 1.0f;  // 1 = Normal. Las medias lo bajarán (ej. 0.5f = mitad de ruido)
+    public float escapeTimeBonus = 0f;    // Segundos extra que te dan los guantes para zafar
+    public float speedMultiplier = 1.0f;   // 1 = Normal. Las botas lo subirán (ej. 1.35f = +35% de velocidad)
+
     [HideInInspector] public HidingSpot currentHidingSpot;
 
     // Estado actual
@@ -148,35 +153,42 @@ public class PlayerController : MonoBehaviour
         if (!isMoving)
         {
             currentState = MoveState.Idle;
-
             currentNoiseRadius = 0f;
         }
         else if (isCrouching)
         {
             currentState = MoveState.Crouching;
-            currentNoiseRadius = crouchNoiseRadius;
+            // MODIFICACIÓN: Multiplica el radio por el noiseMultiplier (Medias)
+            currentNoiseRadius = crouchNoiseRadius * noiseMultiplier;
         }
         else if (isRunning)
         {
             currentState = MoveState.Running;
-            currentNoiseRadius = runNoiseRadius;
+            // MODIFICACIÓN: Multiplica el radio por el noiseMultiplier (Medias)
+            currentNoiseRadius = runNoiseRadius * noiseMultiplier;
         }
         else
         {
             currentState = MoveState.Walking;
-            currentNoiseRadius = walkNoiseRadius;
+            // MODIFICACIÓN: Multiplica el radio por el noiseMultiplier (Medias)
+            currentNoiseRadius = walkNoiseRadius * noiseMultiplier;
         }
     }
 
     float GetCurrentSpeed()
     {
+        float baseSpeed = 0f;
+
         switch (currentState)
         {
-            case MoveState.Running: return runSpeed;
-            case MoveState.Crouching: return crouchSpeed;
-            case MoveState.Walking: return walkSpeed;
-            default: return 0f;
+            case MoveState.Running: baseSpeed = runSpeed; break;
+            case MoveState.Crouching: baseSpeed = crouchSpeed; break;
+            case MoveState.Walking: baseSpeed = walkSpeed; break;
+            default: baseSpeed = 0f; break;
         }
+
+        // MODIFICACIÓN: Retorna la velocidad correspondiente afectada por las Botas
+        return baseSpeed * speedMultiplier;
     }
 
     void ToggleCrouch()
@@ -298,6 +310,7 @@ public class PlayerController : MonoBehaviour
         controlsEnabled = true;
         isHidden = false;
     }
+
     void OnDrawGizmos()
     {
         if (!showNoiseGizmo) return;
