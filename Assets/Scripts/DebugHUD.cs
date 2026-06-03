@@ -150,22 +150,37 @@ public class DebugHUD : MonoBehaviour
         Rect titleRect = new Rect(0, Screen.height * 0.3f, Screen.width, Screen.height * 0.15f);
         GUI.Label(titleRect, title, bigStyle);
 
-        // boton reiniciar centrado
         GUIStyle btnStyle = new GUIStyle(GUI.skin.button);
         btnStyle.fontSize = Mathf.RoundToInt(Screen.height * 0.025f);
 
         float btnW = 220;
         float btnH = 60;
-        Rect btnRect = new Rect(
-            (Screen.width - btnW) / 2f,
-            Screen.height * 0.55f,
-            btnW,
-            btnH
-        );
+        float btnGap = 20f;
+        float totalW = state == GameManager.GameState.Victory ? btnW * 2 + btnGap : btnW;
+        float startX = (Screen.width - totalW) / 2f;
+        float btnY = Screen.height * 0.55f;
 
-        if (GUI.Button(btnRect, "Reiniciar", btnStyle))
+        if (state == GameManager.GameState.Victory)
         {
-            GameManager.Instance.RestartLevel();
+            Rect campBtnRect = new Rect(startX, btnY, btnW, btnH);
+            if (GUI.Button(campBtnRect, "Campamento", btnStyle))
+            {
+                GameManager.Instance.ReturnToBase();
+            }
+
+            Rect retryBtnRect = new Rect(startX + btnW + btnGap, btnY, btnW, btnH);
+            if (GUI.Button(retryBtnRect, "Reiniciar", btnStyle))
+            {
+                GameManager.Instance.RestartLevel();
+            }
+        }
+        else
+        {
+            Rect btnRect = new Rect(startX, btnY, btnW, btnH);
+            if (GUI.Button(btnRect, "Reiniciar", btnStyle))
+            {
+                GameManager.Instance.RestartLevel();
+            }
         }
     }
 

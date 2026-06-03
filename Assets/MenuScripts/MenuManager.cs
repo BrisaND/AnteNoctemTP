@@ -6,9 +6,10 @@ public class MenuManager : MonoBehaviour
     public GameObject creditsCanva;
     public GameObject menuCanva;
     public GameObject controlsCanva;
+
     public void PlayGame()
     {
-        SceneManager.LoadScene("Level");
+        SceneManager.LoadScene("Base");
     }
 
     public void LoadCredits()
@@ -39,6 +40,7 @@ public class MenuManager : MonoBehaviour
     {
         SceneManager.LoadScene("Menu");
     }
+
     public void QuitGame()
     {
         Application.Quit();

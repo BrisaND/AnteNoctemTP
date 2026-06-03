@@ -8,6 +8,10 @@ public class GameManager : MonoBehaviour
     public enum DayState { Dia, Tarde, Noche }
     public enum GameState { Playing, GameOver, Victory }
 
+    [Header("Hub (Base)")]
+    [Tooltip("Si está activo, no corre el temporizador ni el ciclo día/noche (escena campamento).")]
+    public bool isHubScene;
+
     [Header("Timer")]
     [Tooltip("Duracion total del nivel en segundos")]
     public float levelDuration = 180f; // 3 min default
@@ -39,12 +43,16 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
+        if (SceneManager.GetActiveScene().name == "Base")
+            isHubScene = true;
+
         currentTime = levelDuration;
         currentScore = 0;
     }
 
     void Update()
     {
+        if (isHubScene) return;
         if (gameState != GameState.Playing) return;
 
         currentTime -= Time.deltaTime;
@@ -72,6 +80,13 @@ public class GameManager : MonoBehaviour
             dayState = newState;
             OnDayStateChanged?.Invoke(dayState);
         }
+    }
+
+    /// <summary>1 = inicio del nivel (día), 0 = se acabó el tiempo (noche).</summary>
+    public float GetDayProgress01()
+    {
+        if (levelDuration <= 0f) return 0f;
+        return Mathf.Clamp01(currentTime / levelDuration);
     }
 
     public void AddScore(int amount)
@@ -114,8 +129,17 @@ public class GameManager : MonoBehaviour
         gameState = GameState.Victory;
         Debug.Log("VICTORIA!");
         OnGameStateChanged?.Invoke(gameState);
+
         Time.timeScale = 0f;
         UnlockCursor();
+    }
+
+    public void ReturnToBase()
+    {
+        Time.timeScale = 1f;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+        SceneManager.LoadScene("Base");
     }
 
     void UnlockCursor()

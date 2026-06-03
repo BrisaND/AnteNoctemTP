@@ -17,7 +17,7 @@ public class CitizenAI : MonoBehaviour
     public CitizenState currentState { get; private set; } = CitizenState.Patrolling;
 
     private float _detentionDuration = 4f; //Detencion (si falla)
-    private float _interactDistance = 2.8f; //Distancia de interacción con el player
+    private float _interactDistance = 2.8f; //Distancia de interacciï¿½n con el player
     private NavMeshAgent agent;
     private Transform player;
     private PlayerController playerCtrl;
@@ -47,7 +47,7 @@ public class CitizenAI : MonoBehaviour
 
     void Update()
     {
-        // No hacer nada si el juego no está en Playing
+        // No hacer nada si el juego no estï¿½ en Playing
         if (GameManager.Instance != null && GameManager.Instance.gameState != GameManager.GameState.Playing) return;
 
         switch (currentState)
@@ -126,13 +126,13 @@ public class CitizenAI : MonoBehaviour
     {
         currentState = CitizenState.Detaining;
 
-        // Avisar al warden para que se acerque y ejecute su lógica de kill
+        // Avisar al warden para que se acerque y ejecute su lï¿½gica de kill
         if (warden != null && player != null)
         {
             warden.AlertToPosition(player.position);
         }
 
-        // detener al agente mientras detiene al jugador para mantener la interacción coherente
+        // detener al agente mientras detiene al jugador para mantener la interacciï¿½n coherente
         agent.isStopped = true;
         agent.updatePosition = false;
         agent.velocity = Vector3.zero;
