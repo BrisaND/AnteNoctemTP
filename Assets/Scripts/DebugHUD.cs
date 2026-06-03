@@ -77,7 +77,7 @@ public class DebugHUD : MonoBehaviour
             DrawLine(x, ref y, lineH, "ESTADO: " + gm.gameState);
         }
 
-        // Panel arriba der: Player 
+        // Panel arriba der: Player
         if (player != null)
         {
             int lines = 3;
@@ -92,10 +92,32 @@ public class DebugHUD : MonoBehaviour
             DrawLine(x, ref y, lineH, "Crouch: " + (player.isCrouching ? "SI" : "NO"));
         }
 
-        //  Panel abajo izq: Wardens
+        // Panel medio der: MATERIALES (NUEVO)
+        if (MaterialInventory.Instance != null)
+        {
+            int lines = 4; // header + 3 materiales
+            int h = (panelPadding * 2) + (lines * lineH);
+
+            // Posicion: debajo del panel del jugador, con un gap de 10px
+            int playerPanelHeight = (panelPadding * 2) + (3 * lineH);
+            int yPos = marginY + playerPanelHeight + 10;
+
+            Rect panel = new Rect(Screen.width - panelWidth - marginX, yPos, panelWidth, h);
+            GUI.Box(panel, "", bgStyle);
+
+            var inv = MaterialInventory.Instance;
+            float x = panel.x + panelPadding;
+            float y = panel.y + panelPadding;
+            DrawLine(x, ref y, lineH, "MATERIALES:");
+            DrawLine(x, ref y, lineH, "  Hilo:  " + inv.GetCount(MaterialInventory.MaterialType.Hilo));
+            DrawLine(x, ref y, lineH, "  Tela:  " + inv.GetCount(MaterialInventory.MaterialType.Tela));
+            DrawLine(x, ref y, lineH, "  Cuero: " + inv.GetCount(MaterialInventory.MaterialType.Cuero));
+        }
+
+        // Panel abajo izq: Wardens
         if (wardens.Count > 0)
         {
-            int lines = wardens.Count + 1; // +1 por el header
+            int lines = wardens.Count + 1;
             int h = (panelPadding * 2) + (lines * lineH);
             Rect panel = new Rect(marginX, Screen.height - h - marginY, panelWidth, h);
             GUI.Box(panel, "", bgStyle);
@@ -117,7 +139,8 @@ public class DebugHUD : MonoBehaviour
             if (gs == GameManager.GameState.GameOver)
             {
                 SceneManager.LoadScene("GameOver");
-            } else if (gs == GameManager.GameState.Victory)
+            }
+            else if (gs == GameManager.GameState.Victory)
             {
                 DrawEndScreen(GameState.Victory);
             }

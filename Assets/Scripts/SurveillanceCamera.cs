@@ -25,6 +25,16 @@ public class SurveillanceCamera : MonoBehaviour
     [Tooltip("Cuantos segundos antes de poder volver a alertar")]
     public float alertCooldown = 5f;
 
+    [Header("Modificadores de Noche")]
+    public float nightViewDistanceMultiplier = 1.6f;
+    public float nightSwingSpeedMultiplier = 1.7f;
+    [Tooltip("Multiplicador para reducir el delay de deteccion (menor = detecta mas rapido)")]
+    public float nightDetectionDelayMultiplier = 0.4f;
+
+    private float baseViewDistance;
+    private float baseSwingSpeed;
+    private float baseDetectionDelay;
+
     [Header("Debug")]
     public bool showVisionGizmo = true;
 
@@ -45,11 +55,17 @@ public class SurveillanceCamera : MonoBehaviour
             playerCtrl = p.GetComponent<PlayerController>();
         }
         baseRotationY = transform.eulerAngles.y;
+
+        baseViewDistance = viewDistance;
+        baseSwingSpeed = swingSpeed;
+        baseDetectionDelay = detectionDelay;
     }
 
     void Update()
     {
         if (GameManager.Instance != null && GameManager.Instance.gameState != GameManager.GameState.Playing) return;
+
+        ApplyDayNightModifiers();
 
         Swing();
 
@@ -137,5 +153,17 @@ public class SurveillanceCamera : MonoBehaviour
         Gizmos.DrawRay(transform.position, leftDir * viewDistance);
         Gizmos.DrawRay(transform.position, rightDir * viewDistance);
         Gizmos.DrawWireSphere(transform.position, viewDistance);
+    }
+
+    void ApplyDayNightModifiers()
+    {
+        if (GameManager.Instance == null) return;
+
+        float dayProgress = GameManager.Instance.GetDayProgress01();
+        float darkness = 1f - dayProgress;
+
+        viewDistance = Mathf.Lerp(baseViewDistance, baseViewDistance * nightViewDistanceMultiplier, darkness);
+        swingSpeed = Mathf.Lerp(baseSwingSpeed, baseSwingSpeed * nightSwingSpeedMultiplier, darkness);
+        detectionDelay = Mathf.Lerp(baseDetectionDelay, baseDetectionDelay * nightDetectionDelayMultiplier, darkness);
     }
 }

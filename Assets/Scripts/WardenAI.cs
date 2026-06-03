@@ -33,6 +33,20 @@ public class WardenAI : MonoBehaviour
     public float searchDuration = 5f;
     public float searchRadius = 5f;
 
+    [Header("Modificadores de Noche")]
+    [Tooltip("Multiplicador para velocidades cuando es de noche (1 = igual, 1.5 = 50% mas rapido)")]
+    public float nightSpeedMultiplier = 1.5f;
+    [Tooltip("Multiplicador para distancia de vision cuando es de noche")]
+    public float nightViewDistanceMultiplier = 1.35f;
+    [Tooltip("Multiplicador para angulo de vision cuando es de noche")]
+    public float nightViewAngleMultiplier = 1.3f;
+
+    // Valores base guardados al inicio
+    private float basePatrolSpeed;
+    private float baseChaseSpeed;
+    private float baseViewDistance;
+    private float baseViewAngle;
+
     [Header("Debug")]
     public bool showVisionGizmo = true;
 
@@ -56,6 +70,11 @@ public class WardenAI : MonoBehaviour
 
     void Start()
     {
+        basePatrolSpeed = patrolSpeed;
+        baseChaseSpeed = chaseSpeed;
+        baseViewDistance = viewDistance;
+        baseViewAngle = viewAngle;
+
         var p = GameObject.FindGameObjectWithTag("Player");
         if (p != null)
         {
@@ -68,6 +87,8 @@ public class WardenAI : MonoBehaviour
     void Update()
     {
         if (GameManager.Instance != null && GameManager.Instance.gameState != GameManager.GameState.Playing) return;
+
+        ApplyDayNightModifiers();
 
         // NUEVO: Si el jugador está escondido con éxito, el policía pierde visión y audición directa.
         // Solo puede llegar al tacho si fue alertado previamente por el perro o un ciudadano.
@@ -261,5 +282,20 @@ public class WardenAI : MonoBehaviour
         Gizmos.DrawRay(eyePos, leftDir * viewDistance);
         Gizmos.DrawRay(eyePos, rightDir * viewDistance);
         Gizmos.DrawWireSphere(eyePos, viewDistance);
+    }
+
+    void ApplyDayNightModifiers()
+    {
+        if (GameManager.Instance == null) return;
+
+        // 1 = dia, 0 = noche
+        float dayProgress = GameManager.Instance.GetDayProgress01();
+        float darkness = 1f - dayProgress;
+
+        // Interpolamos entre valor base (dia) y valor x multiplicador (noche)
+        patrolSpeed = Mathf.Lerp(basePatrolSpeed, basePatrolSpeed * nightSpeedMultiplier, darkness);
+        chaseSpeed = Mathf.Lerp(baseChaseSpeed, baseChaseSpeed * nightSpeedMultiplier, darkness);
+        viewDistance = Mathf.Lerp(baseViewDistance, baseViewDistance * nightViewDistanceMultiplier, darkness);
+        viewAngle = Mathf.Lerp(baseViewAngle, baseViewAngle * nightViewAngleMultiplier, darkness);
     }
 }

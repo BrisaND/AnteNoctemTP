@@ -62,6 +62,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\GloverPowerUp.cs" />
+    <Compile Include="Assets\Scripts\ShopItem.cs" />
     <Compile Include="Assets\Art\Character\Scripts\ChaScript.cs" />
     <Compile Include="Assets\Scripts\DayNightCycleController.cs" />
     <Compile Include="Assets\Scripts\TrashCan.cs" />
@@ -74,8 +75,10 @@
     <Compile Include="Assets\Scripts\WardenAI.cs" />
     <Compile Include="Assets\Scripts\Hub\HubMapInteractable.cs" />
     <Compile Include="Assets\Scripts\BootsPowerUp.cs" />
+    <Compile Include="Assets\Scripts\ChapuceroShop.cs" />
     <Compile Include="Assets\Scripts\EventFlower.cs" />
     <Compile Include="Assets\Scripts\StealableObject.cs" />
+    <Compile Include="Assets\Scripts\MaterialInventory.cs" />
     <Compile Include="Assets\DenysAlmaral\CityPeople\Demo_Scenes\Scripts-construction\ToolConfig.cs" />
     <Compile Include="Assets\Scripts\Player.cs" />
     <Compile Include="Assets\Scripts\PowerUp.cs" />
@@ -86,6 +89,7 @@
     <Compile Include="Assets\Scripts\CitizenAI.cs" />
     <Compile Include="Assets\Scripts\ScentTrailEmitter.cs" />
     <Compile Include="Assets\TutorialInfo\Scripts\Readme.cs" />
+    <Compile Include="Assets\Scripts\ChapuceroInteractable.cs" />
     <Compile Include="Assets\Scripts\ShoulderCamera.cs" />
     <Compile Include="Assets\Scripts\SkillCheck.cs" />
     <Compile Include="Assets\Scripts\DebugHUD.cs" />

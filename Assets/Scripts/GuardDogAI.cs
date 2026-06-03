@@ -40,6 +40,17 @@ public class GuardDogAI : MonoBehaviour
     [Tooltip("Distancia que el perro retrocede al ser zafado")]
     public float knockbackDistance = 2f;
 
+    [Header("Modificadores de Noche")]
+    public float nightScentRangeMultiplier = 1.8f;
+    public float nightSpeedMultiplier = 1.4f;
+    [Tooltip("Multiplicador para reducir el stun (menor = se recupera mas rapido)")]
+    public float nightStunMultiplier = 0.5f;
+
+    private float baseScentRange;
+    private float basePatrolSpeed;
+    private float baseTrackingSpeed;
+    private float baseStunAfterEscape;
+
     [Header("Debug")]
     public bool showGizmo = true;
 
@@ -68,12 +79,20 @@ public class GuardDogAI : MonoBehaviour
             player = p.transform;
             playerCtrl = p.GetComponent<PlayerController>();
         }
+
+        baseScentRange = scentRange;
+        basePatrolSpeed = patrolSpeed;
+        baseTrackingSpeed = trackingSpeed;
+        baseStunAfterEscape = stunAfterEscape;
+
         if (patrolPoints.Count > 0) GoToNextPatrolPoint();
     }
 
     void Update()
     {
         if (GameManager.Instance != null && GameManager.Instance.gameState != GameManager.GameState.Playing) return;
+
+        ApplyDayNightModifiers();
 
         if (playerCtrl != null)
         {
@@ -461,5 +480,17 @@ public class GuardDogAI : MonoBehaviour
 
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, biteDistance);
+    }
+    void ApplyDayNightModifiers()
+    {
+        if (GameManager.Instance == null) return;
+
+        float dayProgress = GameManager.Instance.GetDayProgress01();
+        float darkness = 1f - dayProgress;
+
+        scentRange = Mathf.Lerp(baseScentRange, baseScentRange * nightScentRangeMultiplier, darkness);
+        patrolSpeed = Mathf.Lerp(basePatrolSpeed, basePatrolSpeed * nightSpeedMultiplier, darkness);
+        trackingSpeed = Mathf.Lerp(baseTrackingSpeed, baseTrackingSpeed * nightSpeedMultiplier, darkness);
+        stunAfterEscape = Mathf.Lerp(baseStunAfterEscape, baseStunAfterEscape * nightStunMultiplier, darkness);
     }
 }

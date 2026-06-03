@@ -1183,6 +1183,54 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 738539950037138135, guid: c5bc02438dfe42849b537f7c20cf51ef, type: 3}
   m_PrefabInstance: {fileID: 105982866}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &143962230
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 143962231}
+  - component: {fileID: 143962232}
+  m_Layer: 0
+  m_Name: MaterialInventory
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &143962231
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 143962230}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 18.122292, y: 3.2070444, z: -50.461357}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 876312186}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &143962232
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 143962230}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ccf48ae6374de34d93608ad7d80a8e7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dropChance: 1
+  hiloWeight: 60
+  telaWeight: 30
+  cueroWeight: 10
 --- !u!1 &158668627
 GameObject:
   m_ObjectHideFlags: 0
@@ -4759,9 +4807,11 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 143962231}
   - {fileID: 1506195278}
   - {fileID: 422770314}
   - {fileID: 357175064}
+  - {fileID: 1825537268}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &888079252
@@ -7720,6 +7770,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 618c66846aab7394f9f75a4229055c48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isHubScene: 0
   levelDuration: 180
   targetScore: 100
   autoWinOnTargetScore: 1
@@ -8810,6 +8861,53 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 7eb355aea32d18b4ebe45fb23cc90de4, type: 3}
   m_PrefabInstance: {fileID: 1824419870}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1825537267
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1825537268}
+  - component: {fileID: 1825537269}
+  m_Layer: 0
+  m_Name: RobberySystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1825537268
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1825537267}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 876312186}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1825537269
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1825537267}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8bb434b45ac46aa4b82ca2c29726c396, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  minStealPoints: 5
+  maxStealPoints: 15
+  debugLogs: 1
 --- !u!1001 &1880526089
 PrefabInstance:
   m_ObjectHideFlags: 0

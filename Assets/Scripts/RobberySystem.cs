@@ -33,7 +33,19 @@ public class RobberySystem : MonoBehaviour
             GameManager.Instance.AddScore(points);
         }
 
-        if (debugLogs)
+        // Intentar dropear un material
+        if (MaterialInventory.Instance != null)
+        {
+            var dropped = MaterialInventory.Instance.TryDropMaterial();
+            if (debugLogs)
+            {
+                if (dropped.HasValue)
+                    Debug.Log(sourceLabel + ": +" + points + " puntos + material: " + dropped.Value);
+                else
+                    Debug.Log(sourceLabel + ": +" + points + " puntos (sin material)");
+            }
+        }
+        else if (debugLogs)
         {
             Debug.Log(sourceLabel + ": +" + points + " puntos");
         }
