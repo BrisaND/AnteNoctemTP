@@ -26,6 +26,7 @@ public class BaseMapView : MonoBehaviour
     [Header("UI")]
     public GameObject mapUIPanel;
     public Button backButton;
+    public HubLevelSelectUI levelSelectUI;
 
     const int MapCameraPriority = 20;
 
@@ -41,6 +42,9 @@ public class BaseMapView : MonoBehaviour
             return;
         }
         Instance = this;
+
+        if (levelSelectUI == null)
+            levelSelectUI = GetComponent<HubLevelSelectUI>();
 
         if (playerCamera == null && Camera.main != null)
             playerCamera = Camera.main.GetComponent<ShoulderCamera>();
@@ -61,6 +65,9 @@ public class BaseMapView : MonoBehaviour
     public void Open()
     {
         if (IsOpen) return;
+
+        if (ChapuceroShop.Instance != null && ChapuceroShop.Instance.IsOpen)
+            return;
 
         if (mapCamera == null)
         {
@@ -85,6 +92,9 @@ public class BaseMapView : MonoBehaviour
         if (mapUIPanel != null)
             mapUIPanel.SetActive(true);
 
+        if (levelSelectUI != null)
+            levelSelectUI.OnMapOpened(mapUIPanel);
+
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
@@ -92,6 +102,9 @@ public class BaseMapView : MonoBehaviour
     public void Close()
     {
         if (!IsOpen) return;
+
+        if (levelSelectUI != null)
+            levelSelectUI.OnMapClosed();
 
         IsOpen = false;
 

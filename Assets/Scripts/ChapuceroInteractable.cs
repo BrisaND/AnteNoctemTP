@@ -27,6 +27,9 @@ public class ChapuceroInteractable : MonoBehaviour
     {
         if (!playerInRange) return;
 
+        if (BaseMapView.Instance != null && BaseMapView.Instance.IsOpen)
+            return;
+
         if (Input.GetKeyDown(interactKey))
         {
             if (ChapuceroShop.Instance != null)

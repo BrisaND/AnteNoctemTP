@@ -40,6 +40,9 @@ public class HubMapInteractable : MonoBehaviour
 
         if (mapView == null || mapView.IsOpen) return;
 
+        if (ChapuceroShop.Instance != null && ChapuceroShop.Instance.IsOpen)
+            return;
+
         if (Input.GetKeyDown(interactKey))
             mapView.Open();
     }

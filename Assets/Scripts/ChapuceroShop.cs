@@ -42,6 +42,8 @@ public class ChapuceroShop : MonoBehaviour
     private ShopItem currentlyViewedItem;
     private List<Button> spawnedItemButtons = new List<Button>();
 
+    public bool IsOpen => currentState != ShopState.Closed;
+
     void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }

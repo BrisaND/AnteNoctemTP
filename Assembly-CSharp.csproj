@@ -77,6 +77,7 @@
     <Compile Include="Assets\Scripts\BootsPowerUp.cs" />
     <Compile Include="Assets\Scripts\ChapuceroShop.cs" />
     <Compile Include="Assets\Scripts\EventFlower.cs" />
+    <Compile Include="Assets\Scripts\Hub\HubLevelSelectUI.cs" />
     <Compile Include="Assets\Scripts\StealableObject.cs" />
     <Compile Include="Assets\Scripts\MaterialInventory.cs" />
     <Compile Include="Assets\DenysAlmaral\CityPeople\Demo_Scenes\Scripts-construction\ToolConfig.cs" />
@@ -92,6 +93,7 @@
     <Compile Include="Assets\Scripts\ChapuceroInteractable.cs" />
     <Compile Include="Assets\Scripts\ShoulderCamera.cs" />
     <Compile Include="Assets\Scripts\SkillCheck.cs" />
+    <Compile Include="Assets\Scripts\Hub\HubZoneEntry.cs" />
     <Compile Include="Assets\Scripts\DebugHUD.cs" />
     <Compile Include="Assets\DenysAlmaral\CityPeople\Demo_Scenes\Scripts\PackageExporterRefs.cs" />
     <Compile Include="Assets\Scripts\QuickEventManager.cs" />
