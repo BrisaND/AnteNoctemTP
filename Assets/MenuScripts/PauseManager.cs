@@ -29,7 +29,7 @@ public class PauseManager : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.P))
+        if (Input.GetKeyDown(KeyCode.Escape))
         {
             // No permitir pausar si el juego termino
             if (GameManager.Instance != null &&

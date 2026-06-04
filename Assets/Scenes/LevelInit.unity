@@ -635,7 +635,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 400016, guid: ddf397bb8ce11384bbc6d7b61581bbc6, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 26.36
+      value: 29.2
       objectReference: {fileID: 0}
     - target: {fileID: 400016, guid: ddf397bb8ce11384bbc6d7b61581bbc6, type: 3}
       propertyPath: m_LocalPosition.y
@@ -643,7 +643,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 400016, guid: ddf397bb8ce11384bbc6d7b61581bbc6, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -28.35
+      value: -27.85
       objectReference: {fileID: 0}
     - target: {fileID: 400016, guid: ddf397bb8ce11384bbc6d7b61581bbc6, type: 3}
       propertyPath: m_LocalRotation.w
@@ -928,6 +928,10 @@ PrefabInstance:
     - target: {fileID: 2828919077877111839, guid: c91ff38c9ddb8f840bf58af401315c38, type: 3}
       propertyPath: catchDistance
       value: 2.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 2828919077877111839, guid: c91ff38c9ddb8f840bf58af401315c38, type: 3}
+      propertyPath: showVisionGizmo
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2828919077877111839, guid: c91ff38c9ddb8f840bf58af401315c38, type: 3}
       propertyPath: 'patrolPoints.Array.data[0]'
@@ -1786,7 +1790,7 @@ Transform:
   m_GameObject: {fileID: 193637788}
   serializedVersion: 2
   m_LocalRotation: {x: 0.00000003774895, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.003, y: -0.0098, z: 0.0116}
+  m_LocalPosition: {x: 0.00037, y: -0.00789, z: 0.01145}
   m_LocalScale: {x: 0.013425831, y: 0.02719269, z: 0.013425831}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1868,7 +1872,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 248120508339529046, guid: 8f9da1416d010424fbe70ed2b4889a2b, type: 3}
       propertyPath: showGizmo
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 248120508339529046, guid: 8f9da1416d010424fbe70ed2b4889a2b, type: 3}
       propertyPath: 'patrolPoints.Array.data[0]'
@@ -3791,7 +3795,7 @@ MonoBehaviour:
   runSpacing: 0.8
   crouchSpacing: 3
   markerLifetime: 8
-  showMarkers: 1
+  showMarkers: 0
 --- !u!114 &605616231
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3816,7 +3820,7 @@ MonoBehaviour:
   walkNoiseRadius: 4
   runNoiseRadius: 10
   crouchNoiseRadius: 1
-  showNoiseGizmo: 1
+  showNoiseGizmo: 0
   transitionDuration: 0.8
   noiseMultiplier: 1
   escapeTimeBonus: 0
@@ -4746,6 +4750,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1224839392666014303, guid: 4109492cbd292764aa394da23de840e1, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4340252112481892934, guid: 4109492cbd292764aa394da23de840e1, type: 3}
+      propertyPath: showGizmo
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4340252112481892934, guid: 4109492cbd292764aa394da23de840e1, type: 3}
@@ -6396,6 +6404,10 @@ PrefabInstance:
     - target: {fileID: 89505311303518807, guid: f19868f0b05104143b31c50931145ccc, type: 3}
       propertyPath: viewDistance
       value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 89505311303518807, guid: f19868f0b05104143b31c50931145ccc, type: 3}
+      propertyPath: showVisionGizmo
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2990720471454542275, guid: f19868f0b05104143b31c50931145ccc, type: 3}
       propertyPath: m_LocalPosition.x
@@ -8293,7 +8305,7 @@ Transform:
   m_GameObject: {fileID: 1694936715}
   serializedVersion: 2
   m_LocalRotation: {x: 0.00000003774895, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.0013, y: -0.011185813, z: 0.00039440067}
+  m_LocalPosition: {x: -0.00059, y: -0.0062, z: 0.00036}
   m_LocalScale: {x: 0.013425831, y: 0.02719269, z: 0.013425831}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -9466,7 +9478,7 @@ Transform:
   m_GameObject: {fileID: 2026382636}
   serializedVersion: 2
   m_LocalRotation: {x: 0.00000003774895, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.0032, y: -0.0012, z: 0.004}
+  m_LocalPosition: {x: 0.00309, y: -0.0012, z: 0.00161}
   m_LocalScale: {x: 0.013425831, y: 0.02719269, z: 0.013425831}
   m_ConstrainProportionsScale: 0
   m_Children: []
