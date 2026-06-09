@@ -25,8 +25,14 @@ public class MaterialInventory : MonoBehaviour
 
     void Awake()
     {
-        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         Instance = this;
+        DontDestroyOnLoad(gameObject);
 
         // Inicializamos el inventario en 0
         foreach (MaterialType mat in Enum.GetValues(typeof(MaterialType)))
@@ -68,5 +74,24 @@ public class MaterialInventory : MonoBehaviour
     public int GetCount(MaterialType type)
     {
         return inventory.ContainsKey(type) ? inventory[type] : 0;
+    }
+
+    public bool RemoveMaterials(MaterialType type, int amount)
+    {
+        if (!inventory.ContainsKey(type)) inventory[type] = 0;
+
+        if (inventory[type] >= amount)
+        {
+            inventory[type] -= amount;
+
+            // Reutilizamos tu evento para que la UI de la base también se entere del cambio si es necesario
+            OnMaterialAdded?.Invoke(type, inventory[type]);
+
+            Debug.Log($"[Canje] Se quitaron {amount} de {type}. Total restante: {inventory[type]}");
+            return true;
+        }
+
+        Debug.LogWarning($"[Canje] No hay suficiente {type}. Requerido: {amount}, Tienes: {inventory[type]}");
+        return false;
     }
 }

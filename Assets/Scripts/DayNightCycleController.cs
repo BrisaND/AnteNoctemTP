@@ -8,13 +8,13 @@ using UnityEngine.Rendering;
 public class DayNightCycleController : MonoBehaviour
 {
     [Header("Referencias")]
-    [Tooltip("Luz direccional principal (sol). Si está vacío, se busca en la escena.")]
+    [Tooltip("Luz direccional principal (sol).")]
     public Light sunLight;
-    [Tooltip("Yaw fijo del sol (orientación horizontal de tu nivel).")]
+    [Tooltip("Yaw fijo del sol.")]
     public float sunYaw = -30f;
 
     [Header("Configuración del Sol Visual (Eje X, Color, Intensidad)")]
-    [Tooltip("Curva para la inclinación (Pitch) del sol de 0 (Día) a 1 (Noche).")]
+    [Tooltip("Curva para la inclinación del sol de 0 (Día) a 1 (Noche).")]
     public AnimationCurve sunPitchCurve = AnimationCurve.Linear(0f, 55f, 1f, -22f);
     [Tooltip("Gradiente de color del sol desde el inicio hasta el final del nivel.")]
     public Gradient sunColorGradient;

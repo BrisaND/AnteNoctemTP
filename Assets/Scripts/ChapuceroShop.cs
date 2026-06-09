@@ -107,9 +107,35 @@ public class ChapuceroShop : MonoBehaviour
         currentState = ShopState.Confirmation;
         currentlyViewedItem = item;
 
+        // 1. Buscamos al Player en la escena de la base
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+
+        // 2. Comprobamos si el jugador YA tiene el item equipado/activado
+        bool yaLoTiene = false;
+        if (player != null)
+        {
+            switch (item.itemId)
+            {
+                case "boots":
+                    var boots = player.GetComponentInChildren<BootsPowerUp>(true);
+                    if (boots != null && boots.enabled) yaLoTiene = true;
+                    break;
+                case "socks":
+                    var socks = player.GetComponentInChildren<SocksPowerUp>(true);
+                    if (socks != null && socks.enabled) yaLoTiene = true;
+                    break;
+                case "gloves":
+                    var gloves = player.GetComponentInChildren<GlovesPowerUp>(true);
+                    if (gloves != null && gloves.enabled) yaLoTiene = true;
+                    break;
+            }
+        }
+
+        // 3. Mostramos el texto adecuado según el estado real del componente
         string txt;
-        if (item.isPurchased) txt = alreadyPurchasedText;
+        if (yaLoTiene) txt = alreadyPurchasedText;
         else txt = item.displayName + ": " + item.description;
+
         if (dialogueTextBuy != null) dialogueTextBuy.text = txt;
 
         if (costText != null)
@@ -117,8 +143,8 @@ public class ChapuceroShop : MonoBehaviour
 
         SetActivePanel(showNext: false, showBuy: true, showSelector: false);
 
-        // Siempre dejamos el boton clickeable (excepto si ya fue comprado)
-        if (buyButton != null) buyButton.interactable = !item.isPurchased;
+        // El botón de comprar solo será interactuable si el jugador NO lo tiene equipado
+        if (buyButton != null) buyButton.interactable = !yaLoTiene;
     }
 
     void SetActivePanel(bool showNext, bool showBuy, bool showSelector)
@@ -135,6 +161,8 @@ public class ChapuceroShop : MonoBehaviour
     void OnBuyClicked()
     {
         if (currentlyViewedItem == null) return;
+
+        // 1. Validamos si tiene los materiales necesarios
         if (!PlayerHasEnoughMaterials(currentlyViewedItem))
         {
             if (dialogueTextBuy != null) dialogueTextBuy.text = notEnoughMaterialsText;
@@ -144,13 +172,16 @@ public class ChapuceroShop : MonoBehaviour
         var inv = MaterialInventory.Instance;
         if (inv != null)
         {
-            inv.AddMaterial(MaterialInventory.MaterialType.Hilo, -currentlyViewedItem.hiloCost);
-            inv.AddMaterial(MaterialInventory.MaterialType.Tela, -currentlyViewedItem.telaCost);
-            inv.AddMaterial(MaterialInventory.MaterialType.Cuero, -currentlyViewedItem.cueroCost);
+            // 2. MODIFICACIÓN: Usamos el método seguro RemoveMaterials que dispara los eventos de UI correspondientes
+            inv.RemoveMaterials(MaterialInventory.MaterialType.Hilo, currentlyViewedItem.hiloCost);
+            inv.RemoveMaterials(MaterialInventory.MaterialType.Tela, currentlyViewedItem.telaCost);
+            inv.RemoveMaterials(MaterialInventory.MaterialType.Cuero, currentlyViewedItem.cueroCost);
         }
 
+        // 3. Aplicamos la lógica de equipamiento original
         EquipItem(currentlyViewedItem);
         currentlyViewedItem.isPurchased = true;
+
         if (dialogueTextBuy != null) dialogueTextBuy.text = purchaseSuccessText;
         if (buyButton != null) buyButton.interactable = false;
     }

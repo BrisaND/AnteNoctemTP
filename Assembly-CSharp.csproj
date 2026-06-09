@@ -67,6 +67,7 @@
     <Compile Include="Assets\Scripts\DayNightCycleController.cs" />
     <Compile Include="Assets\Scripts\TrashCan.cs" />
     <Compile Include="Assets\Scripts\Hub\BaseMapView.cs" />
+    <Compile Include="Assets\Scripts\PlayerHudController.cs" />
     <Compile Include="Assets\Scripts\SocksPowerUp.cs" />
     <Compile Include="Assets\MenuScripts\MenuManager.cs" />
     <Compile Include="Assets\Scripts\ScentMarker.cs" />
@@ -87,6 +88,7 @@
     <Compile Include="Assets\DenysAlmaral\CityPeople\Scripts\CityPeople.cs" />
     <Compile Include="Assets\Scripts\SurveillanceCamera.cs" />
     <Compile Include="Assets\DenysAlmaral\CityPeople\Demo_Scenes\Scripts-construction\SwapAndToolController.cs" />
+    <Compile Include="Assets\Scripts\TimeClockUI.cs" />
     <Compile Include="Assets\Scripts\CitizenAI.cs" />
     <Compile Include="Assets\Scripts\ScentTrailEmitter.cs" />
     <Compile Include="Assets\TutorialInfo\Scripts\Readme.cs" />

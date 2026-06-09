@@ -130,8 +130,18 @@ public class GameManager : MonoBehaviour
         Debug.Log("VICTORIA!");
         OnGameStateChanged?.Invoke(gameState);
 
-        Time.timeScale = 0f;
+        // Cancelar QuickEvents si ganás justo en uno
+        if (QuickEventManager.Instance != null && QuickEventManager.Instance.IsActive)
+        {
+            if (QuickEventManager.Instance.quickEventCanvas != null)
+                QuickEventManager.Instance.quickEventCanvas.SetActive(false);
+        }
+
+        Time.timeScale = 1f; // Mantenemos el tiempo en 1 para que la nueva escena funcione fluida
         UnlockCursor();
+
+        // CARGA LA ESCENA DE VICTORIA
+        UnityEngine.SceneManagement.SceneManager.LoadScene("Victory");
     }
 
     public void ReturnToBase()
