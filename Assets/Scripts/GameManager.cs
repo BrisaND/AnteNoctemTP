@@ -82,7 +82,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    /// <summary>1 = inicio del nivel (día), 0 = se acabó el tiempo (noche).</summary>
+    /// 1 = inicio del nivel (día), 0 = se acabó el tiempo (noche).
     public float GetDayProgress01()
     {
         if (levelDuration <= 0f) return 0f;

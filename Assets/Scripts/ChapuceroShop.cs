@@ -131,7 +131,7 @@ public class ChapuceroShop : MonoBehaviour
             }
         }
 
-        // 3. Mostramos el texto adecuado según el estado real del componente
+        // 3. Mostramos el texto adecuado segï¿½n el estado real del componente
         string txt;
         if (yaLoTiene) txt = alreadyPurchasedText;
         else txt = item.displayName + ": " + item.description;
@@ -143,7 +143,7 @@ public class ChapuceroShop : MonoBehaviour
 
         SetActivePanel(showNext: false, showBuy: true, showSelector: false);
 
-        // El botón de comprar solo será interactuable si el jugador NO lo tiene equipado
+        // El botï¿½n de comprar solo serï¿½ interactuable si el jugador NO lo tiene equipado
         if (buyButton != null) buyButton.interactable = !yaLoTiene;
     }
 
@@ -172,13 +172,13 @@ public class ChapuceroShop : MonoBehaviour
         var inv = MaterialInventory.Instance;
         if (inv != null)
         {
-            // 2. MODIFICACIÓN: Usamos el método seguro RemoveMaterials que dispara los eventos de UI correspondientes
+            // 2. MODIFICACIï¿½N: Usamos el mï¿½todo seguro RemoveMaterials que dispara los eventos de UI correspondientes
             inv.RemoveMaterials(MaterialInventory.MaterialType.Hilo, currentlyViewedItem.hiloCost);
             inv.RemoveMaterials(MaterialInventory.MaterialType.Tela, currentlyViewedItem.telaCost);
             inv.RemoveMaterials(MaterialInventory.MaterialType.Cuero, currentlyViewedItem.cueroCost);
         }
 
-        // 3. Aplicamos la lógica de equipamiento original
+        // 3. Aplicamos la lï¿½gica de equipamiento original
         EquipItem(currentlyViewedItem);
         currentlyViewedItem.isPurchased = true;
 
