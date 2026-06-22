@@ -121,6 +121,10 @@ public class GameManager : MonoBehaviour
         }
         Time.timeScale = 1f;
         UnlockCursor();
+
+
+        UnityEngine.SceneManagement.SceneManager.LoadScene("GameOver");
+
     }
 
     public void Victory()

@@ -9,7 +9,7 @@ public class MenuManager : MonoBehaviour
 
     public void PlayGame()
     {
-        SceneManager.LoadScene("Base");
+        LoadingScreen.LoadingScreenAsync("Base");
     }
 
     public void LoadCredits()
@@ -38,7 +38,7 @@ public class MenuManager : MonoBehaviour
 
     public void LoadMainMenu()
     {
-        SceneManager.LoadScene("Menu");
+        LoadingScreen.LoadingScreenAsync("Menu");
     }
 
     public void QuitGame()
