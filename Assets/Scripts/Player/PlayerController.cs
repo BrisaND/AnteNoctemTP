@@ -12,7 +12,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("Estado de Sigilo")]
     public bool isHidden { get; private set; } = false;
-    [Tooltip("Arrastra aquí el GameObject que contiene TODO el modelo visual (mesh, armature, etc.)")]
+    [Tooltip("GameObject que contiene TODO el modelo visual (mesh, armature, etc.)")]
     public GameObject contenedorModeloVisual;
 
     [Header("Crouch")]
@@ -21,7 +21,6 @@ public class PlayerController : MonoBehaviour
     public CapsuleCollider playerCollider;
 
     [Header("Ruido (lo escuchan los enemigos)")]
-    [Tooltip("Radio de ruido en metros segun el estado")]
     public Animator animator;
     public float walkNoiseRadius = 4f;
     public float runNoiseRadius = 10f;
@@ -31,32 +30,36 @@ public class PlayerController : MonoBehaviour
     public bool showNoiseGizmo = true;
 
     [Header("Configuración del Escondite")]
-    public float transitionDuration = 0.8f; // Tiempo en segundos que tarda en meterse/salir
+    public float transitionDuration = 0.8f;
     private Coroutine hidingCoroutine;
 
     [Header("Power-Ups / Beneficios")]
-    public float noiseMultiplier = 1.0f;  // 1 = Normal. Las medias lo bajarán (ej. 0.5f = mitad de ruido)
-    public float escapeTimeBonus = 0f;    // Segundos extra que te dan los guantes para zafar
-    public float speedMultiplier = 1.0f;   // 1 = Normal. Las botas lo subirán (ej. 1.35f = +35% de velocidad)
+    public float noiseMultiplier = 1.0f;
+    public float escapeTimeBonus = 0f;
+    public float speedMultiplier = 1.0f;
 
     [HideInInspector] public HidingSpot currentHidingSpot;
-
-    // Estado actual
     public enum MoveState { Idle, Walking, Running, Crouching }
     public MoveState currentState { get; private set; } = MoveState.Idle;
     public float currentNoiseRadius { get; private set; } = 0f;
     public bool isCrouching { get; private set; } = false;
     private ShoulderCamera camaraJugador;
+    private Vector3 camLocalOffset;
+    private Quaternion camLocalRotationOffset;
 
     private Rigidbody rb;
     private Vector3 moveInput;
     private Camera mainCam;
     private bool controlsEnabled = true;
 
+    [Header("Audio")]
+    public AudioSource audioSource;
+    public AudioClip walkSound;
+
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
-        rb.freezeRotation = true; // que no se caiga sola
+        rb.freezeRotation = true;
         if (playerCollider == null) playerCollider = GetComponent<CapsuleCollider>();
         if (animator == null) animator = GetComponent<Animator>();
         mainCam = Camera.main;
@@ -66,10 +69,16 @@ public class PlayerController : MonoBehaviour
             camaraJugador = mainCam.GetComponent<ShoulderCamera>();
         }
 
-        // Fallback: Si por alguna razón el script está en otro objeto, lo busca en la escena
         if (camaraJugador == null)
         {
             camaraJugador = FindFirstObjectByType<ShoulderCamera>();
+        }
+
+        if (mainCam != null)
+        {
+            // Guardamos la posición y rotación de la cámara RELATIVAS al jugador
+            camLocalOffset = transform.InverseTransformPoint(mainCam.transform.position);
+            camLocalRotationOffset = Quaternion.Inverse(transform.rotation) * mainCam.transform.rotation;
         }
     }
 
@@ -77,12 +86,10 @@ public class PlayerController : MonoBehaviour
     {
         if (!controlsEnabled) return;
 
-        // Input movimiento (WASD / flechas)
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
         moveInput = new Vector3(h, 0, v).normalized;
 
-        // Toggle crouch (Ctrl izq o C)
         if (Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.C))
         {
             ToggleCrouch();
@@ -98,17 +105,24 @@ public class PlayerController : MonoBehaviour
 
         bool isMoving = moveInput.sqrMagnitude > 0.01f;
 
-        // Sincronizar parámetros con el Animator Controller
         animator.SetBool("isWalking", isMoving && !isCrouching && !Input.GetKey(KeyCode.LeftShift));
         animator.SetBool("isRunning", isMoving && !isCrouching && Input.GetKey(KeyCode.LeftShift));
         animator.SetBool("isCrouching", isCrouching);
+
+        float velocidadAnimacion = 1f;
+
+        if (speedMultiplier < 1f)
+        {
+            velocidadAnimacion = speedMultiplier;
+        }
+
+        animator.SetFloat("Speed", velocidadAnimacion);
     }
 
     void FixedUpdate()
     {
         if (!controlsEnabled)
         {
-            // Si hay Rigidbody y no es kinematic, detenerlo; si es kinematic no tocarlo.
             if (rb != null && !rb.isKinematic)
             {
                 rb.linearVelocity = Vector3.zero;
@@ -121,7 +135,6 @@ public class PlayerController : MonoBehaviour
 
     void Move()
     {
-        // movimiento relativo a la rotacion del jugador (que ahora rota con la camara)
         Vector3 forward = transform.forward * moveInput.z;
         Vector3 right = transform.right * moveInput.x;
         Vector3 dir = (forward + right).normalized;
@@ -129,17 +142,13 @@ public class PlayerController : MonoBehaviour
         float speed = GetCurrentSpeed();
         Vector3 velocity = dir * speed;
 
-        // conservar componente Y actual si existe Rigidbody no-kinematic
-        float currentY = 0f;
         if (rb != null && !rb.isKinematic)
         {
-            currentY = rb.linearVelocity.y;
-            velocity.y = currentY;
+            velocity.y = rb.linearVelocity.y;
             rb.linearVelocity = velocity;
         }
         else
         {
-            // Si Rigidbody es kinematic (por ejemplo forzado por PressurePlate), mover por transform como fallback
             velocity.y = 0f;
             transform.position += velocity * Time.fixedDeltaTime;
         }
@@ -152,25 +161,33 @@ public class PlayerController : MonoBehaviour
 
         if (!isMoving)
         {
+            if (audioSource.isPlaying) audioSource.Stop();
             currentState = MoveState.Idle;
             currentNoiseRadius = 0f;
         }
         else if (isCrouching)
         {
+            if (audioSource.isPlaying) audioSource.Pause();
             currentState = MoveState.Crouching;
-            // MODIFICACIÓN: Multiplica el radio por el noiseMultiplier (Medias)
             currentNoiseRadius = crouchNoiseRadius * noiseMultiplier;
         }
         else if (isRunning)
         {
+            if (audioSource.isPlaying) audioSource.Stop();
             currentState = MoveState.Running;
-            // MODIFICACIÓN: Multiplica el radio por el noiseMultiplier (Medias)
             currentNoiseRadius = runNoiseRadius * noiseMultiplier;
         }
         else
         {
+            // Solo reproducir si no estaba sonando ya
+            if (!audioSource.isPlaying)
+            {
+                audioSource.clip = walkSound;
+                audioSource.loop = true;
+                audioSource.Play();
+            }
+
             currentState = MoveState.Walking;
-            // MODIFICACIÓN: Multiplica el radio por el noiseMultiplier (Medias)
             currentNoiseRadius = walkNoiseRadius * noiseMultiplier;
         }
     }
@@ -187,7 +204,6 @@ public class PlayerController : MonoBehaviour
             default: baseSpeed = 0f; break;
         }
 
-        // MODIFICACIÓN: Retorna la velocidad correspondiente afectada por las Botas
         return baseSpeed * speedMultiplier;
     }
 
@@ -196,15 +212,13 @@ public class PlayerController : MonoBehaviour
         isCrouching = !isCrouching;
         if (playerCollider != null)
         {
-            float center = playerCollider.center.y;
             float targetHeight = isCrouching ? crouchHeight : standHeight;
             playerCollider.height = targetHeight;
-            // ajustamos el centro para que no flote
-            playerCollider.center = new Vector3(0, center, 0);
+
+            playerCollider.center = new Vector3(0f, targetHeight / 2f, 0f);
         }
     }
 
-    // Resetea el movimiento del jugador luego de caerse, para evitar que quede con velocidad residual o en estado incorrecto
     public void ResetMovementState()
     {
         moveInput = Vector3.zero;
@@ -217,13 +231,11 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // Permite habilitar/deshabilitar controles (usado por el ciudadano si detiene al jugador)
     public void SetControlsEnabled(bool enabled)
     {
         controlsEnabled = enabled;
         if (!enabled)
         {
-            // parar inmediatamente solo si Rigidbody está en modo físico
             if (rb != null && !rb.isKinematic)
             {
                 rb.linearVelocity = Vector3.zero;
@@ -248,67 +260,89 @@ public class PlayerController : MonoBehaviour
         isHidden = true;
         controlsEnabled = false;
 
+        // se apaga el script de tercera persona durante el viaje ---
+        if (camaraJugador != null) camaraJugador.enabled = false;
+
+        if (contenedorModeloVisual != null) contenedorModeloVisual.SetActive(false);
+
         if (rb != null) { rb.linearVelocity = Vector3.zero; rb.isKinematic = true; }
         if (playerCollider != null) playerCollider.enabled = false;
 
-        // TRANSICIÓN FLUIDA: Desplazamiento suave hacia adentro del tacho
-        Vector3 startPos = transform.position;
-        Quaternion startRot = transform.rotation;
+        transform.position = targetPos.position;
+        transform.rotation = targetPos.rotation;
+
+        Vector3 startCamPos = mainCam.transform.position;
+        Quaternion startCamRot = mainCam.transform.rotation;
         float elapsed = 0f;
 
         while (elapsed < transitionDuration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.fixedDeltaTime;
             float percent = elapsed / transitionDuration;
-
-            // Suavizado de interpolación (SmoothStep)
             float t = percent * percent * (3f - 2f * percent);
 
-            transform.position = Vector3.Lerp(startPos, targetPos.position, t);
-            transform.rotation = Quaternion.Slerp(startRot, targetPos.rotation, t);
-            yield return null;
+            mainCam.transform.position = Vector3.Lerp(startCamPos, cameraPoint.position, t);
+            mainCam.transform.rotation = Quaternion.Slerp(startCamRot, cameraPoint.rotation, t);
+
+            yield return new WaitForFixedUpdate();
         }
 
-        // Aseguramos posición final exacta
-        transform.position = targetPos.position;
-        transform.rotation = targetPos.rotation;
+        mainCam.transform.position = cameraPoint.position;
+        mainCam.transform.rotation = cameraPoint.rotation;
 
-        // CAMBIO A PRIMERA PERSONA: Ocultamos malla y activamos el modo de visualización ranura
-        if (contenedorModeloVisual != null) contenedorModeloVisual.SetActive(false);
-        if (camaraJugador != null) camaraJugador.EnterFirstPersonMode(cameraPoint);
+        // --- se enciende el script de cámara justo antes de entrar a Primera Persona ---
+        if (camaraJugador != null)
+        {
+            camaraJugador.enabled = true;
+            camaraJugador.EnterFirstPersonMode(cameraPoint);
+        }
     }
 
     private IEnumerator TransitionToExit(Transform targetPos)
     {
-        // Volvemos a activar la tercera persona y el render antes de salir físicamente
-        if (camaraJugador != null) camaraJugador.ExitFirstPersonMode();
-        if (contenedorModeloVisual != null) contenedorModeloVisual.SetActive(true);
-
-        // TRANSICIÓN FLUIDA: Salida controlada hacia el punto exterior seguro
-        Vector3 startPos = transform.position;
-        Quaternion startRot = transform.rotation;
-        float elapsed = 0f;
-
-        while (elapsed < transitionDuration)
+        // --- sale de 1ª persona y apagamos el script ---
+        if (camaraJugador != null)
         {
-            elapsed += Time.deltaTime;
-            float percent = elapsed / transitionDuration;
-            float t = percent * percent * (3f - 2f * percent);
-
-            transform.position = Vector3.Lerp(startPos, targetPos.position, t);
-            transform.rotation = Quaternion.Slerp(startRot, targetPos.rotation, t);
-            yield return null;
+            camaraJugador.ExitFirstPersonMode();
+            camaraJugador.enabled = false;
         }
+
+        Vector3 startCamPos = mainCam.transform.position;
+        Quaternion startCamRot = mainCam.transform.rotation;
 
         transform.position = targetPos.position;
         transform.rotation = targetPos.rotation;
 
-        // Reactivación total de físicas normales
+        Vector3 targetCamPos = transform.TransformPoint(camLocalOffset);
+        Quaternion targetCamRot = transform.rotation * camLocalRotationOffset;
+
+        float elapsed = 0f;
+
+        while (elapsed < transitionDuration)
+        {
+            elapsed += Time.fixedDeltaTime;
+            float percent = elapsed / transitionDuration;
+            float t = percent * percent * (3f - 2f * percent);
+
+            mainCam.transform.position = Vector3.Lerp(startCamPos, targetCamPos, t);
+            mainCam.transform.rotation = Quaternion.Slerp(startCamRot, targetCamRot, t);
+
+            yield return new WaitForFixedUpdate();
+        }
+
+        mainCam.transform.position = targetCamPos;
+        mainCam.transform.rotation = targetCamRot;
+
+        if (contenedorModeloVisual != null) contenedorModeloVisual.SetActive(true);
+
         if (playerCollider != null) playerCollider.enabled = true;
         if (rb != null) rb.isKinematic = false;
 
         controlsEnabled = true;
         isHidden = false;
+
+        // --- enciende el script de cámara para que vuelva a seguir en 3ª persona ---
+        if (camaraJugador != null) camaraJugador.enabled = true;
     }
 
     void OnDrawGizmos()

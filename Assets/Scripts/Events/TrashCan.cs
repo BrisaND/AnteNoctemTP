@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(Collider))]
 public class TrashCan : MonoBehaviour
@@ -12,32 +11,35 @@ public class TrashCan : MonoBehaviour
     public KeyCode interactKey = KeyCode.E;
     public bool debugLogs = true;
 
+    [Header("Animación del Tacho")]
+    public Animator trashCanAnimator;
+    public string animatorBoolParam = "isOpen";
+
     [Header("Puntuación")]
     public UnityEvent<int> OnScoreGained;
     int localScore = 0;
 
     [Header("Flor (debe existir en escena)")]
-    [Tooltip("Referencia al GameObject de la flor ya presente en la escena (debe estar en la posición deseada).")]
     public GameObject flowerObject;
+    public Animator flowerAnimator;
+    public string flowerAttackTrigger = "AttackTrigger";
     [Range(0f, 1f)]
     public float flowerChance = 0.2f;
-    [Tooltip("Tiempo durante el cual el jugador queda retenido si falla")]
-    public float flowerRetainDuration = 3f;
-    [Tooltip("Tiempo que la flor permanece activa")]
-    public float flowerLifetime = 4f;
+
+    [Tooltip("¿Cuántos segundos se queda la flor GIGANTE atrapando al jugador despues de fallar?")]
+    public float catchDuration = 3f;
+
     public bool deactivateFlowerAtStart = true;
     public UnityEvent OnFlowerSpawned;
 
     [Header("SkillCheck")]
-    [Tooltip("Referencia al componente EventFlower (skillcheck) que ya está en la escena.")]
+    [Tooltip("Referencia al componente EventFlower (skillcheck) en escena.")]
     public EventFlower quickEventFlower;
-    [Tooltip("Número de pulsaciones necesarias para huir")]
     public int quickRequiredPresses = 10;
-    [Tooltip("Si true, el skillcheck usará flowerRetainDuration como tiempo límite")]
-    public bool useRetainDurationAsSkillTime = true;
+    [Tooltip("Tiempo límite que tiene el jugador para resolver el SkillCheck")]
+    public float skillCheckTimeLimit = 4f;
 
     [Header("Control del jugador")]
-    [Tooltip("Usar PlayerController para pausar controles si existe")]
     public bool pausePlayerMovement = true;
 
     bool playerInRange;
@@ -45,65 +47,51 @@ public class TrashCan : MonoBehaviour
     PlayerController currentPlayerController;
     List<Behaviour> disabledMovementComponents = new List<Behaviour>();
 
-    // Evita reentradas
     bool interactionInProgress = false;
+    bool isPunishing = false; // evitar que OnTriggerExit cierre el tacho durante el ataque
 
     void Start()
     {
-        // Asegurarse de que flor y skillcheck empiezan desactivados
         if (deactivateFlowerAtStart) flowerObject.SetActive(false);
+        if (trashCanAnimator == null) trashCanAnimator = GetComponentInChildren<Animator>();
+        if (flowerAnimator == null && flowerObject != null) flowerAnimator = flowerObject.GetComponent<Animator>();
 
-        // Aplicar parámetros al skillcheck existente
         quickEventFlower.requiredPresses = quickRequiredPresses;
-        quickEventFlower.duration = useRetainDurationAsSkillTime ? flowerRetainDuration : quickEventFlower.duration;
-
-        var col = GetComponent<Collider>();
+        quickEventFlower.duration = skillCheckTimeLimit;
 
         var gm = GameManager.Instance ?? FindFirstObjectByType<GameManager>();
-        if (gm != null)
-        {
-            OnScoreGained.AddListener(gm.AddScore);
-            if (debugLogs) Debug.Log("TrashCan: OnScoreGained conectado automáticamente a GameManager.AddScore.");
-        }
+        if (gm != null) OnScoreGained.AddListener(gm.AddScore);
     }
 
     void Update()
     {
         if (Input.GetKeyDown(interactKey))
         {
-            // Solo permitir interacción si el jugador está en rango
-            if (!playerInRange)
-            {
-                return;
-            }
-
+            if (!playerInRange) return;
             InteractOnce();
         }
     }
 
-    // Maneja una interacción completa (aparecer flor, skillcheck, retención, puntuación) sin permitir reentradas
     void InteractOnce()
     {
-        if (interactionInProgress)
-        {
-            return;
-        }
-
+        if (interactionInProgress) return;
         StartCoroutine(HandleSingleInteraction());
     }
 
-    // Maneja toda la lógica de una interacción completa, asegurando que no se pueden solapar múltiples interacciones
     IEnumerator HandleSingleInteraction()
     {
         interactionInProgress = true;
+        isPunishing = false;
 
         if (Random.value < flowerChance)
         {
-            // Aparece la flor
-            ShowFlower();
+            // 1. Abrimos el tacho y mostramos la flor
+            OpenTrashCanAndShowFlower();
             OnFlowerSpawned?.Invoke();
 
-            // Pausar controles del jugador
+            // Espera obligatoria para que el Animator complete la transición de apertura
+            yield return new WaitForSeconds(0.2f);
+
             if (pausePlayerMovement && currentPlayer != null)
             {
                 if (currentPlayerController != null)
@@ -126,91 +114,90 @@ public class TrashCan : MonoBehaviour
                 success = r;
             };
 
-            // Suscribir y arrancar el skillcheck existente
             quickEventFlower.OnSkillCheckResult.AddListener(onResult);
             quickEventFlower.requiredPresses = quickRequiredPresses;
 
-            // --- MODIFICACIÓN PARA LOS GUANTES (POWER-UP) ---
-            // Calculamos el tiempo base del SkillCheck
-            float tiempoSkillCheck = useRetainDurationAsSkillTime ? flowerRetainDuration : quickEventFlower.duration;
-
-            // Si el jugador tiene puestos los guantes, le sumamos los segundos extra al SkillCheck
-            if (currentPlayerController != null)
-            {
-                tiempoSkillCheck += currentPlayerController.escapeTimeBonus;
-            }
+            float tiempoSkillCheck = skillCheckTimeLimit;
+            if (currentPlayerController != null) tiempoSkillCheck += currentPlayerController.escapeTimeBonus;
 
             quickEventFlower.duration = tiempoSkillCheck;
-            // -------------------------------------------------
-
             quickEventFlower.StartSkillCheck();
 
-            // Esperar resultado
+            // Mantiene la tapa arriba y la flor activa mientras dure el minijuego
             while (!resultReceived)
+            {
+                // Forzamos el estado del Animator en cada frame por si otra función intenta apagarlo
+                if (trashCanAnimator != null) trashCanAnimator.SetBool(animatorBoolParam, true);
                 yield return null;
+            }
 
-            // Limpiar listener
             quickEventFlower.OnSkillCheckResult.RemoveListener(onResult);
 
             if (success)
             {
-                // Éxito en el skillcheck -> sumar punto y restaurar movimiento
+                // ÉXITO: Recién acá cerramos todo de golpe
                 AwardStealPointsFromTrashCan();
-                HideExistingFlower();
+                CloseTrashCanAndHideFlower();
                 RestorePlayerMovement();
             }
             else
             {
-                // Falló el skillcheck -> esperar un tiempo antes de permitir moverse
-                yield return new WaitForSeconds(Mathf.Max(0f, flowerRetainDuration));
+                // 2. FASE ATAQUE (FALLÓ): Activamos el castigo manteniendo la tapa levantada
+                isPunishing = true;
+
+                if (flowerAnimator != null)
+                {
+                    flowerAnimator.SetTrigger(flowerAttackTrigger);
+                }
+
+                yield return new WaitForSeconds(catchDuration);
+
+                // 3. FIN DEL CASTIGO: Liberamos y cerramos
+                isPunishing = false;
                 RestorePlayerMovement();
-                HideExistingFlower();
+                CloseTrashCanAndHideFlower();
             }
         }
         else
         {
-            // No aparece flor -> robo inmediato
             AwardStealPointsFromTrashCan();
+            StartCoroutine(QuickOpenCloseAnimation());
         }
 
+        // Bloqueamos salidas accidentales hasta este frame exacto
         interactionInProgress = false;
     }
 
-    // Muestra la flor y programa su ocultación tras x segundos, cancelando cualquier ocultación previa pendiente
-    void ShowFlower()
+    void OpenTrashCanAndShowFlower()
     {
-        flowerObject.SetActive(true);
-        CancelInvoke(nameof(HideExistingFlower));
-        Invoke(nameof(HideExistingFlower), flowerLifetime);
+        if (flowerObject != null) flowerObject.SetActive(true);
+        if (trashCanAnimator != null) trashCanAnimator.SetBool(animatorBoolParam, true);
     }
 
-    // Oculta la flor inmediatamente
-    void HideExistingFlower()
+    void CloseTrashCanAndHideFlower()
     {
-        flowerObject.SetActive(false);
+        if (flowerObject != null) flowerObject.SetActive(false);
+        if (trashCanAnimator != null) trashCanAnimator.SetBool(animatorBoolParam, false);
     }
 
-    // deshabilita movimiento si no hay PlayerController, buscando componentes relacionados con movimiento y desactivándolos (y restaurándolos luego)
+    IEnumerator QuickOpenCloseAnimation()
+    {
+        if (trashCanAnimator != null)
+        {
+            trashCanAnimator.SetBool(animatorBoolParam, true);
+            yield return new WaitForSeconds(0.3f);
+            trashCanAnimator.SetBool(animatorBoolParam, false);
+        }
+    }
+
     void DisableMovementHeuristic(GameObject player)
     {
         if (player == null) return;
-
         disabledMovementComponents.Clear();
-
-        // Deshabilitar CharacterController si existe
         var cc = player.GetComponent<CharacterController>();
         if (cc != null) cc.enabled = false;
-
-        // Deshabilitar Rigidbody para evitar que el jugador se mueva por fuerzas externas mientras está retenido
         var rb = player.GetComponentInChildren<Rigidbody>();
-        if (rb != null)
-        {
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-            rb.isKinematic = true;
-        }
-
-        // intentari cubrir otros tipos de movimiento: buscar componentes con nombres relacionados con movimiento y desactivarlos (y restaurarlos luego)
+        if (rb != null) { rb.linearVelocity = Vector3.zero; rb.angularVelocity = Vector3.zero; rb.isKinematic = true; }
         var monos = player.GetComponents<MonoBehaviour>();
         foreach (var m in monos)
         {
@@ -225,28 +212,18 @@ public class TrashCan : MonoBehaviour
         }
     }
 
-    // Restaura el movimiento del jugador, usando PlayerController
     void RestorePlayerMovement()
     {
         if (currentPlayer == null) return;
-
-        if (currentPlayerController != null)
-            currentPlayerController.SetControlsEnabled(true);
+        if (currentPlayerController != null) currentPlayerController.SetControlsEnabled(true);
     }
 
     void AwardStealPointsFromTrashCan()
     {
-        if (RobberySystem.Instance != null)
-        {
-            RobberySystem.Instance.AwardStealPoints("Robo en basurero");
-        }
-        else if (GameManager.Instance != null)
-        {
-            GameManager.Instance.AddScore(Random.Range(5, 16));
-        }
+        if (RobberySystem.Instance != null) RobberySystem.Instance.AwardStealPoints("Robo en basurero");
+        else if (GameManager.Instance != null) GameManager.Instance.AddScore(Random.Range(5, 16));
     }
 
-    // Detecta al jugador entrando en rango, guardando referencias para la interacción
     void OnTriggerEnter(Collider other)
     {
         PlayerController pc = other.GetComponentInParent<PlayerController>();
@@ -258,29 +235,30 @@ public class TrashCan : MonoBehaviour
         }
     }
 
-    // Asegura limpiar estado si el jugador sale del rango durante una interacción
     void OnTriggerExit(Collider other)
     {
         if (other.CompareTag(playerTag) || other.transform.root.CompareTag(playerTag))
         {
+            // --- NUEVO FILTRO ---
+            // Si el minijuego de la flor está en progreso o castigando,
+            // bloqueamos por completo que este método cierre la tapa o limpie los datos.
+            if (interactionInProgress || isPunishing)
+            {
+                return;
+            }
+
             playerInRange = false;
             RestorePlayerMovement();
-            interactionInProgress = false;
+            CloseTrashCanAndHideFlower();
             currentPlayer = null;
             currentPlayerController = null;
         }
     }
 
-    // Asegura limpiar estado si el objeto se desactiva durante una interacción
     void OnDisable()
     {
-        // Asegurar que si hay un skillcheck en curso se limpia
-        if (quickEventFlower != null && quickEventFlower.IsActive)
-        {
-            quickEventFlower.Cancel();
-        }
+        if (quickEventFlower != null && quickEventFlower.IsActive) quickEventFlower.Cancel();
     }
 
-    // obtiene la puntuación local del cubo de basura
     public int GetLocalScore() => localScore;
 }
