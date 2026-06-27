@@ -68,12 +68,14 @@
     <Compile Include="Assets\MenuScripts\MenuManager.cs" />
     <Compile Include="Assets\Scripts\Characters\CitizenAI.cs" />
     <Compile Include="Assets\Scripts\Characters\SurveillanceCamera.cs" />
+    <Compile Include="Assets\Scripts\Player\ISoundFloor.cs" />
     <Compile Include="Assets\Scripts\Player\PowerUp.cs" />
     <Compile Include="Assets\Scripts\Events\StealableObject.cs" />
     <Compile Include="Assets\Scripts\Characters\ChapuceroInteractable.cs" />
     <Compile Include="Assets\Scripts\Hub\HubMapInteractable.cs" />
     <Compile Include="Assets\Scripts\Hub\HubLevelSelectUI.cs" />
     <Compile Include="Assets\DenysAlmaral\CityPeople\Demo_Scenes\Scripts-construction\ToolConfig.cs" />
+    <Compile Include="Assets\Scripts\Events\ExitZone.cs" />
     <Compile Include="Assets\MenuScripts\PauseManager.cs" />
     <Compile Include="Assets\Scripts\Events\TimeClockUI.cs" />
     <Compile Include="Assets\Scripts\Player\SocksPowerUp.cs" />
@@ -91,6 +93,7 @@
     <Compile Include="Assets\Scripts\Events\RobberySystem.cs" />
     <Compile Include="Assets\Scripts\Hub\DebugHUD.cs" />
     <Compile Include="Assets\Scripts\Events\ScentMarker.cs" />
+    <Compile Include="Assets\Scripts\Player\SoundFloor.cs" />
     <Compile Include="Assets\Scripts\Events\EventFlower.cs" />
     <Compile Include="Assets\Scripts\Screens\LoadingScreen.cs" />
     <Compile Include="Assets\Scripts\Hub\HubZoneEntry.cs" />

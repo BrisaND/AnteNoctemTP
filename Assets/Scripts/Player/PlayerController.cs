@@ -54,7 +54,10 @@ public class PlayerController : MonoBehaviour
 
     [Header("Audio")]
     public AudioSource audioSource;
+    public AudioClip defaultSound;
     public AudioClip walkSound;
+
+    public LayerMask maskFloor;
 
     void Awake()
     {
@@ -63,7 +66,7 @@ public class PlayerController : MonoBehaviour
         if (playerCollider == null) playerCollider = GetComponent<CapsuleCollider>();
         if (animator == null) animator = GetComponent<Animator>();
         mainCam = Camera.main;
-
+        walkSound = defaultSound;
         if (mainCam != null)
         {
             camaraJugador = mainCam.GetComponent<ShoulderCamera>();
@@ -97,6 +100,27 @@ public class PlayerController : MonoBehaviour
 
         UpdateState();
         UpdateAnimations();
+        UpdateSoundWalk();
+    }
+    RaycastHit _lastFloor;
+    void UpdateSoundWalk()
+    {
+        if (Physics.Raycast(transform.position, -Vector2.up, out RaycastHit hit, 20f, maskFloor))
+        {
+            if (_lastFloor.Equals(hit))
+                return;
+            var s = hit.collider.gameObject.GetComponent<ISoundFloor>();
+
+            if (s != null)
+                walkSound = s.GetClip();
+
+            _lastFloor = hit;
+        }
+        else
+        {
+            _lastFloor = default;
+            walkSound = defaultSound;
+        }
     }
 
     void UpdateAnimations()
@@ -180,7 +204,7 @@ public class PlayerController : MonoBehaviour
         else
         {
             // Solo reproducir si no estaba sonando ya
-            if (!audioSource.isPlaying)
+            if (!audioSource.isPlaying || audioSource.clip != walkSound)
             {
                 audioSource.clip = walkSound;
                 audioSource.loop = true;

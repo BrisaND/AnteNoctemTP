@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -14,13 +16,21 @@ public class GameManager : MonoBehaviour
 
     [Header("Timer")]
     [Tooltip("Duracion total del nivel en segundos")]
-    public float levelDuration = 180f; // 3 min default
+    public float levelDuration = 180f;
     public float currentTime { get; private set; }
 
     [Header("Score")]
     public int targetScore = 100;
     public int currentScore { get; private set; }
-    public bool autoWinOnTargetScore = true;
+
+    [Tooltip("¿Ganar automáticamente al llegar al puntaje o permitir seguir farmeando?")]
+    public bool autoWinOnTargetScore = false;
+
+    [Header("UI Aviso de Cuota")]
+    [Tooltip("El GameObject del Canvas o panel que avisa que ya se puede regresar.")]
+    public GameObject quotaNotificationCanvas;
+    [Tooltip("¿Cuántos segundos se queda el cartel en pantalla?")]
+    public float notificationDuration = 4f;
 
     [Header("Estados")]
     public DayState dayState { get; private set; } = DayState.Dia;
@@ -30,10 +40,11 @@ public class GameManager : MonoBehaviour
     [Range(0f, 1f)] public float tardeThreshold = 0.5f;
     [Range(0f, 1f)] public float nocheThreshold = 0.2f;
 
-    // Eventos para que otros scripts reaccionen
     public System.Action<DayState> OnDayStateChanged;
     public System.Action<GameState> OnGameStateChanged;
     public System.Action<int> OnScoreChanged;
+
+    private bool hasNotifiedQuota = false;
 
     void Awake()
     {
@@ -48,6 +59,8 @@ public class GameManager : MonoBehaviour
 
         currentTime = levelDuration;
         currentScore = 0;
+
+        if (quotaNotificationCanvas != null) quotaNotificationCanvas.SetActive(false);
     }
 
     void Update()
@@ -55,15 +68,28 @@ public class GameManager : MonoBehaviour
         if (isHubScene) return;
         if (gameState != GameState.Playing) return;
 
-        currentTime -= Time.deltaTime;
-        UpdateDayState();
-
-        if (currentTime <= 0f)
+        // Solo descontamos tiempo si no ha llegado a 0
+        if (currentTime > 0f)
         {
-            currentTime = 0f;
-            // si llego a la noche sin la cuota, perdiste
-            if (currentScore >= targetScore) Victory();
-            else GameOver("Se hizo de noche");
+            currentTime -= Time.deltaTime;
+            UpdateDayState();
+
+            if (currentTime <= 0f)
+            {
+                currentTime = 0f;
+
+                // --- NUEVA LÓGICA DE TIEMPO ---
+                // Si se acaba el tiempo y NO llegó a los puntos obligatorios, pierde inmediatamente.
+                // Si YA tiene los puntos, NO lo mandamos a Victoria. Se queda en el nivel para farmear.
+                if (currentScore < targetScore)
+                {
+                    GameOver("Se hizo de noche y no juntaste la cuota mínima.");
+                }
+                else
+                {
+                    Debug.Log("Se acabó el tiempo, pero tienes la cuota. ¡Busca la puerta de salida para escapar!");
+                }
+            }
         }
     }
 
@@ -82,7 +108,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    /// 1 = inicio del nivel (día), 0 = se acabó el tiempo (noche).
     public float GetDayProgress01()
     {
         if (levelDuration <= 0f) return 0f;
@@ -93,6 +118,7 @@ public class GameManager : MonoBehaviour
     {
         currentScore += amount;
         OnScoreChanged?.Invoke(currentScore);
+
         if (currentScore >= targetScore && gameState == GameState.Playing)
         {
             if (autoWinOnTargetScore)
@@ -101,8 +127,27 @@ public class GameManager : MonoBehaviour
             }
             else
             {
-                Debug.Log("Cuota alcanzada! Vuelve al pueblo.");
+                if (!hasNotifiedQuota)
+                {
+                    hasNotifiedQuota = true;
+                    StartCoroutine(ShowQuotaNotificationRoutine());
+                }
             }
+        }
+    }
+
+    private IEnumerator ShowQuotaNotificationRoutine()
+    {
+        if (quotaNotificationCanvas != null)
+        {
+            // Forzamos la activación del GameObject completo
+            quotaNotificationCanvas.SetActive(true);
+
+            // Esperamos los segundos configurados en el inspector
+            yield return new WaitForSeconds(notificationDuration);
+
+            // Lo volvemos a apagar por completo
+            quotaNotificationCanvas.SetActive(false);
         }
     }
 
@@ -110,42 +155,40 @@ public class GameManager : MonoBehaviour
     {
         if (gameState != GameState.Playing) return;
         gameState = GameState.GameOver;
-        Debug.Log("GAME OVER: " + reason);
         OnGameStateChanged?.Invoke(gameState);
-        // Cancelar cualquier QuickEvent en curso
+
         if (QuickEventManager.Instance != null && QuickEventManager.Instance.IsActive)
         {
-            // forzamos el cierre del canvas si quedo abierto
             if (QuickEventManager.Instance.quickEventCanvas != null)
                 QuickEventManager.Instance.quickEventCanvas.SetActive(false);
         }
         Time.timeScale = 1f;
         UnlockCursor();
-
-
-        UnityEngine.SceneManagement.SceneManager.LoadScene("GameOver");
-
+        SceneManager.LoadScene("GameOver");
     }
 
     public void Victory()
     {
         if (gameState != GameState.Playing) return;
         gameState = GameState.Victory;
-        Debug.Log("VICTORIA!");
         OnGameStateChanged?.Invoke(gameState);
 
-        // Cancelar QuickEvents si ganás justo en uno
         if (QuickEventManager.Instance != null && QuickEventManager.Instance.IsActive)
         {
             if (QuickEventManager.Instance.quickEventCanvas != null)
                 QuickEventManager.Instance.quickEventCanvas.SetActive(false);
         }
 
-        Time.timeScale = 1f; // Mantenemos el tiempo en 1 para que la nueva escena funcione fluida
+    }
+
+    public void CompleteLevelAndLoadVictory()
+    {
+        Time.timeScale = 1f;
         UnlockCursor();
 
-        // CARGA LA ESCENA DE VICTORIA
-        UnityEngine.SceneManagement.SceneManager.LoadScene("Victory");
+        // RECIÉN ACÁ HACEMOS EL CAMBIO DE ESCENA
+        Debug.Log("Cargando pantalla de victoria desde la puerta de escape...");
+        SceneManager.LoadScene("Victory");
     }
 
     public void ReturnToBase()
@@ -171,7 +214,6 @@ public class GameManager : MonoBehaviour
         SceneManager.LoadScene(scene.name);
     }
 
-    // Helper para UI
     public string GetTimeFormatted()
     {
         int min = Mathf.FloorToInt(currentTime / 60f);

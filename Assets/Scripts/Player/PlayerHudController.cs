@@ -1,5 +1,5 @@
 using UnityEngine;
-using TMPro; // Esencial para manejar TextMeshPro
+using TMPro;
 
 public class PlayerHudController : MonoBehaviour
 {
