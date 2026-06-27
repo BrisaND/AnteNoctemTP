@@ -2,13 +2,16 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI;
+using TMPro;
 
 public class LoadingScreen : MonoBehaviour
 {
-    [SerializeField] Image _progressBar;
+    [Header("UI Elementos")]
+    [SerializeField] TextMeshProUGUI _progressText;
     [SerializeField] GameObject _pressAnyKey;
+
     static string _nameLoadScene;
+
     void Start()
     {
         StartCoroutine(LoadSceneAsync(_nameLoadScene));
@@ -28,22 +31,32 @@ public class LoadingScreen : MonoBehaviour
 
         while (!operation.isDone)
         {
-            float progress = operation.progress / 0.9f;
-            _progressBar.fillAmount = progress;
+            float progress = Mathf.Clamp01(operation.progress / 0.9f);
 
-            if (progress >= 0.9f)
+            int percentage = Mathf.RoundToInt(progress * 100f);
+
+            // Actualizamos el texto en pantalla (Ej: "85%")
+            if (_progressText != null)
+            {
+                _progressText.text = percentage + "%";
+            }
+
+            if (progress >= 1f)
             {
                 yield return new WaitForSeconds(0.5f);
-                _pressAnyKey.SetActive(true);
+
+                if (_pressAnyKey != null) _pressAnyKey.SetActive(true);
+
                 bool _anyKey = false;
                 while (_anyKey == false)
                 {
-                    if (Keyboard.current.anyKey.wasPressedThisFrame)
+                    if (Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame)
                     {
                         _anyKey = true;
                     }
                     yield return null;
                 }
+
                 operation.allowSceneActivation = true;
             }
             yield return null;
