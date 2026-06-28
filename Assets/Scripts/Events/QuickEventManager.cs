@@ -49,9 +49,22 @@ public class QuickEventManager : MonoBehaviour
         isActive = true;
         quickEventCanvas.SetActive(true);
 
-        Time.timeScale = 0f;
+                Time.timeScale = 0f;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+
+        // Ajustar velocidad del SkillCheck según dificultad del ciudadano
+        float multiplier = 1f;
+        if (citizen != null)
+        {
+            switch (citizen.difficulty)
+            {
+                case RobberySystem.DifficultyLevel.Easy: multiplier = 1f; break;
+                case RobberySystem.DifficultyLevel.Medium: multiplier = 3.6f; break;
+                case RobberySystem.DifficultyLevel.Hard: multiplier = 5.4f; break;
+            }
+        }
+        skillCheck.SetSpeedMultiplier(multiplier);
 
         skillCheck.OnSkillCheckResult.AddListener(HandleSkillResult);
         skillCheck.StartSkillCheck();

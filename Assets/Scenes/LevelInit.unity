@@ -635,15 +635,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 400016, guid: ddf397bb8ce11384bbc6d7b61581bbc6, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 29.2
+      value: 3.2
       objectReference: {fileID: 0}
     - target: {fileID: 400016, guid: ddf397bb8ce11384bbc6d7b61581bbc6, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.98
+      value: 0.36
       objectReference: {fileID: 0}
     - target: {fileID: 400016, guid: ddf397bb8ce11384bbc6d7b61581bbc6, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -27.85
+      value: -27.6
       objectReference: {fileID: 0}
     - target: {fileID: 400016, guid: ddf397bb8ce11384bbc6d7b61581bbc6, type: 3}
       propertyPath: m_LocalRotation.w
@@ -2195,12 +2195,16 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1667521147987796639, guid: 8f9da1416d010424fbe70ed2b4889a2b, type: 3}
+      propertyPath: m_Radius
+      value: 0.37
+      objectReference: {fileID: 0}
+    - target: {fileID: 1667521147987796639, guid: 8f9da1416d010424fbe70ed2b4889a2b, type: 3}
       propertyPath: m_Enabled
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1667521147987796639, guid: 8f9da1416d010424fbe70ed2b4889a2b, type: 3}
       propertyPath: m_BaseOffset
-      value: 1.7
+      value: 0.49
       objectReference: {fileID: 0}
     - target: {fileID: 2387598685010038670, guid: 8f9da1416d010424fbe70ed2b4889a2b, type: 3}
       propertyPath: m_Radius
@@ -2268,7 +2272,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5714065709847964651, guid: 8f9da1416d010424fbe70ed2b4889a2b, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 3.12
+      value: 1.64
       objectReference: {fileID: 0}
     - target: {fileID: 5714065709847964651, guid: 8f9da1416d010424fbe70ed2b4889a2b, type: 3}
       propertyPath: m_LocalPosition.z
@@ -11314,7 +11318,7 @@ NavMeshAgent:
   m_AutoBraking: 1
   m_AutoRepath: 1
   m_Height: 4.087116
-  m_BaseOffset: 2.043558
+  m_BaseOffset: 0.01
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
 --- !u!82 &605616241
@@ -18583,6 +18587,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   minStealPoints: 5
   maxStealPoints: 15
+  easyConfig:
+    minPoints: 5
+    maxPoints: 10
+  mediumConfig:
+    minPoints: 15
+    maxPoints: 25
+  hardConfig:
+    minPoints: 30
+    maxPoints: 50
   debugLogs: 1
 --- !u!1 &1887673646
 GameObject:

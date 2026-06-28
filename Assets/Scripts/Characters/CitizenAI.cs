@@ -6,7 +6,11 @@ using System.Collections;
 [RequireComponent(typeof(NavMeshAgent))]
 public class CitizenAI : MonoBehaviour
 {
-    public enum CitizenState { Patrolling, Detaining }
+        public enum CitizenState { Patrolling, Detaining }
+
+        [Header("Configuración")]
+    public bool randomizeDifficulty = true;
+    public RobberySystem.DifficultyLevel difficulty = RobberySystem.DifficultyLevel.Easy;
 
     [Header("Patrullaje")]
     public List<Transform> patrolPoints = new List<Transform>();
@@ -34,9 +38,20 @@ public class CitizenAI : MonoBehaviour
         if (warden == null) warden = FindFirstObjectByType<WardenAI>();
     }
 
-    void Start()
-    {
-        var p = GameObject.FindGameObjectWithTag("Player");
+        void Start()
+        {
+            if (randomizeDifficulty)
+            {
+                float roll = Random.value; // Valor entre 0.0 y 1.0
+                if (roll < 0.6f) // 60% probabilidad
+                    difficulty = RobberySystem.DifficultyLevel.Easy;
+                else if (roll < 0.9f) // 30% probabilidad (0.6 a 0.9)
+                    difficulty = RobberySystem.DifficultyLevel.Medium;
+                else // 10% probabilidad (0.9 a 1.0)
+                    difficulty = RobberySystem.DifficultyLevel.Hard;
+            }
+
+            var p = GameObject.FindGameObjectWithTag("Player");
         if (p != null)
         {
             player = p.transform;
@@ -104,11 +119,11 @@ public class CitizenAI : MonoBehaviour
     // Invocado por QuickEventManager cuando termina (true = acierto)
     public void OnPlayerInteractionResult(bool success)
     {
-        if (success)
+                if (success)
         {
             if (RobberySystem.Instance != null)
             {
-                RobberySystem.Instance.AwardStealPoints("Robo al ciudadano");
+                RobberySystem.Instance.AwardStealPoints(difficulty, "Robo al ciudadano");
             }
             else if (GameManager.Instance != null)
             {
