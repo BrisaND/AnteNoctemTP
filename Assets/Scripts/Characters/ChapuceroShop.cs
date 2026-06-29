@@ -2,11 +2,15 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
+using AnteNoctem.Core;
 
-public class ChapuceroShop : MonoBehaviour
+// ===== GENERICS + HERENCIA =====
+// Hereda de Singleton<ChapuceroShop>. Asi tiene Instance automaticamente y solo puede haber uno.
+// El <ChapuceroShop> es el parametro generico: le dice al Singleton de que tipo es esta instancia.
+public class ChapuceroShop : Singleton<ChapuceroShop>
 {
-    public static ChapuceroShop Instance { get; private set; }
-
+    // ===== ENUM =====
+    // Los estados posibles de la tienda. Asi sabemos en que momento del flujo esta.
     public enum ShopState { Closed, Greeting, ShowingItem, Confirmation }
 
     [Header("UI Principal")]
@@ -38,17 +42,15 @@ public class ChapuceroShop : MonoBehaviour
     [TextArea(2, 4)] public string purchaseSuccessText = "Listo, ahi lo tenes. Que te sirva.";
     [TextArea(2, 4)] public string alreadyPurchasedText = "Eso ya te lo arme antes, no necesitas otro.";
 
+    // ===== ENCAPSULAMIENTO =====
+    // Variables privadas: solo este script puede modificarlas. Asi protegemos el estado interno.
     private ShopState currentState = ShopState.Closed;
     private ShopItem currentlyViewedItem;
     private List<Button> spawnedItemButtons = new List<Button>();
 
+    // ===== GETTER (expression-bodied) =====
+    // Otros scripts pueden leer si la tienda esta abierta, pero no pueden cambiarlo desde afuera
     public bool IsOpen => currentState != ShopState.Closed;
-
-    void Awake()
-    {
-        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-        Instance = this;
-    }
 
     void Start()
     {
@@ -60,6 +62,7 @@ public class ChapuceroShop : MonoBehaviour
 
     void Update()
     {
+        // Esc para cerrar la tienda
         if (currentState != ShopState.Closed && Input.GetKeyDown(KeyCode.Escape))
         {
             CloseShop();
@@ -86,7 +89,8 @@ public class ChapuceroShop : MonoBehaviour
         currentlyViewedItem = null;
     }
 
-    // ===== ESTADOS =====
+    // Cada metodo Show* maneja un estado distinto de la tienda
+
     void ShowGreeting()
     {
         currentState = ShopState.Greeting;
@@ -107,10 +111,9 @@ public class ChapuceroShop : MonoBehaviour
         currentState = ShopState.Confirmation;
         currentlyViewedItem = item;
 
-        // 1. Buscamos al Player en la escena de la base
+        // Buscamos al Player y vemos si ya tiene equipado este item
         GameObject player = GameObject.FindGameObjectWithTag("Player");
 
-        // 2. Comprobamos si el jugador YA tiene el item equipado/activado
         bool yaLoTiene = false;
         if (player != null)
         {
@@ -131,19 +134,24 @@ public class ChapuceroShop : MonoBehaviour
             }
         }
 
-        // 3. Mostramos el texto adecuado seg�n el estado real del componente
+        // Mostramos el texto adecuado segun si ya lo tiene o no
         string txt;
         if (yaLoTiene) txt = alreadyPurchasedText;
         else txt = item.displayName + ": " + item.description;
 
         if (dialogueTextBuy != null) dialogueTextBuy.text = txt;
 
+        // ===== USO DE STRUCT =====
+        // Creamos un MaterialRequirement con el costo del item y usamos su ToString para mostrarlo
         if (costText != null)
-            costText.text = "Hilo: " + item.hiloCost + "   Tela: " + item.telaCost + "   Cuero: " + item.cueroCost;
+        {
+            var cost = new MaterialRequirement(item.hiloCost, item.telaCost, item.cueroCost);
+            costText.text = cost.ToString();
+        }
 
         SetActivePanel(showNext: false, showBuy: true, showSelector: false);
 
-        // El bot�n de comprar solo ser� interactuable si el jugador NO lo tiene equipado
+        // El boton solo es interactuable si el jugador NO lo tiene equipado
         if (buyButton != null) buyButton.interactable = !yaLoTiene;
     }
 
@@ -154,7 +162,7 @@ public class ChapuceroShop : MonoBehaviour
         if (itemSelectorContainer != null) itemSelectorContainer.gameObject.SetActive(showSelector);
     }
 
-    // ===== BOTONES =====
+    // Botones del flujo de la tienda
     void OnNextClicked() { ShowItemList(); }
     void OnRejectClicked() { ShowItemList(); }
 
@@ -162,23 +170,30 @@ public class ChapuceroShop : MonoBehaviour
     {
         if (currentlyViewedItem == null) return;
 
-        // 1. Validamos si tiene los materiales necesarios
-        if (!PlayerHasEnoughMaterials(currentlyViewedItem))
+        // ===== USO DE STRUCT =====
+        // Armamos el costo del item como un MaterialRequirement y le preguntamos si el jugador puede pagarlo
+        var requirement = new MaterialRequirement(
+            currentlyViewedItem.hiloCost,
+            currentlyViewedItem.telaCost,
+            currentlyViewedItem.cueroCost
+        );
+
+        if (!requirement.IsAffordable(MaterialInventory.Instance))
         {
             if (dialogueTextBuy != null) dialogueTextBuy.text = notEnoughMaterialsText;
             return;
         }
 
+        // Descontamos los materiales
         var inv = MaterialInventory.Instance;
         if (inv != null)
         {
-            // 2. MODIFICACI�N: Usamos el m�todo seguro RemoveMaterials que dispara los eventos de UI correspondientes
             inv.RemoveMaterials(MaterialInventory.MaterialType.Hilo, currentlyViewedItem.hiloCost);
             inv.RemoveMaterials(MaterialInventory.MaterialType.Tela, currentlyViewedItem.telaCost);
             inv.RemoveMaterials(MaterialInventory.MaterialType.Cuero, currentlyViewedItem.cueroCost);
         }
 
-        // 3. Aplicamos la l�gica de equipamiento original
+        // Equipamos el item al jugador
         EquipItem(currentlyViewedItem);
         currentlyViewedItem.isPurchased = true;
 
@@ -186,24 +201,16 @@ public class ChapuceroShop : MonoBehaviour
         if (buyButton != null) buyButton.interactable = false;
     }
 
-    // ===== HELPERS =====
-    bool PlayerHasEnoughMaterials(ShopItem item)
-    {
-        var inv = MaterialInventory.Instance;
-        if (inv == null) return false;
-        return inv.GetCount(MaterialInventory.MaterialType.Hilo) >= item.hiloCost
-            && inv.GetCount(MaterialInventory.MaterialType.Tela) >= item.telaCost
-            && inv.GetCount(MaterialInventory.MaterialType.Cuero) >= item.cueroCost;
-    }
-
     void BuildItemButtons()
     {
+        // Limpiamos los botones del listado anterior (si quedaron)
         foreach (var b in spawnedItemButtons)
             if (b != null) Destroy(b.gameObject);
         spawnedItemButtons.Clear();
 
         if (itemButtonPrefab == null || itemSelectorContainer == null) return;
 
+        // Por cada item disponible, instanciamos un boton clickeable
         foreach (var item in items)
         {
             Button btn = Instantiate(itemButtonPrefab, itemSelectorContainer);
@@ -215,6 +222,7 @@ public class ChapuceroShop : MonoBehaviour
         }
     }
 
+    // Activa el componente del power-up correspondiente en el Player
     void EquipItem(ShopItem item)
     {
         Debug.Log("Item equipado: " + item.itemId);

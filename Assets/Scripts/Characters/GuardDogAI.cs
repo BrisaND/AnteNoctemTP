@@ -2,16 +2,15 @@ using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
 using System.Collections.Generic;
+using AnteNoctem.Core;
+using AnteNoctem.Enemies;
 
-[RequireComponent(typeof(NavMeshAgent))]
-public class GuardDogAI : MonoBehaviour
+// ===== HERENCIA + CLASE ABSTRACTA =====
+// Hereda de EnemyBase. Asi reutiliza el patrullaje, el NavMeshAgent, las referencias al jugador, etc.
+public class GuardDogAI : EnemyBase
 {
+    // ===== ENUM =====
     public enum DogState { Patrolling, Tracking, Dragging }
-
-    [Header("Patrullaje")]
-    public List<Transform> patrolPoints = new List<Transform>();
-    public float waitAtPoint = 1.5f;
-    public float patrolSpeed = 2.5f;
 
     [Header("Olfato")]
     [Tooltip("Distancia a la que detecta una marca")]
@@ -42,12 +41,10 @@ public class GuardDogAI : MonoBehaviour
 
     [Header("Modificadores de Noche")]
     public float nightScentRangeMultiplier = 1.8f;
-    public float nightSpeedMultiplier = 1.4f;
     [Tooltip("Multiplicador para reducir el stun (menor = se recupera mas rapido)")]
     public float nightStunMultiplier = 0.5f;
 
     private float baseScentRange;
-    private float basePatrolSpeed;
     private float baseTrackingSpeed;
     private float baseStunAfterEscape;
 
@@ -56,56 +53,33 @@ public class GuardDogAI : MonoBehaviour
 
     public DogState currentState { get; private set; } = DogState.Patrolling;
 
-    private NavMeshAgent agent;
-    private Transform player;
-    private PlayerController playerCtrl;
-    private int currentPatrolIndex = 0;
-    private float waitTimer = 0f;
     private ScentMarker currentTarget;
     private bool minigameActive = false;
     private bool isStunned = false;
     private bool wasPlayerHidden = false;
 
-    void Awake()
+    protected override void Start()
     {
-        agent = GetComponent<NavMeshAgent>();
-    }
-
-    void Start()
-    {
-        var p = GameObject.FindGameObjectWithTag("Player");
-        if (p != null)
-        {
-            player = p.transform;
-            playerCtrl = p.GetComponent<PlayerController>();
-        }
-
+        base.Start();
         baseScentRange = scentRange;
-        basePatrolSpeed = patrolSpeed;
         baseTrackingSpeed = trackingSpeed;
         baseStunAfterEscape = stunAfterEscape;
-
-        if (patrolPoints.Count > 0) GoToNextPatrolPoint();
     }
 
-    void Update()
+    protected override void Update()
     {
+        base.Update();
         if (GameManager.Instance != null && GameManager.Instance.gameState != GameManager.GameState.Playing) return;
-
-        ApplyDayNightModifiers();
 
         if (playerCtrl != null)
         {
+            // Si el jugador salio de un escondite, decidimos si lo perseguimos o volvemos a patrullar
             if (wasPlayerHidden && !playerCtrl.isHidden)
             {
-                // Descongelamos al agente de navegación
                 if (agent != null) agent.isStopped = false;
-
-                // Evaluamos la distancia. Si sales frente al perro, te persigue.
                 if (Vector3.Distance(transform.position, player.position) <= scentRange)
                 {
                     currentState = DogState.Tracking;
-                    Debug.Log("El perro retoma la persecución.");
                 }
                 else
                 {
@@ -114,14 +88,19 @@ public class GuardDogAI : MonoBehaviour
             }
             wasPlayerHidden = playerCtrl.isHidden;
 
-            // Prioridad absoluta si el jugador sigue escondido
             if (playerCtrl.isHidden)
             {
                 CheckHidingSpots();
-                return; // Corta el comportamiento normal
+                return;
             }
         }
 
+        HandleBehavior();
+    }
+
+    // ===== METODO ABSTRACTO IMPLEMENTADO =====
+    protected override void HandleBehavior()
+    {
         switch (currentState)
         {
             case DogState.Patrolling:
@@ -136,35 +115,11 @@ public class GuardDogAI : MonoBehaviour
                 break;
 
             case DogState.Dragging:
-                // Movimiento manejado por la coroutine
                 break;
         }
     }
 
-    // ===== PATRULLAJE =====
-    void Patrol()
-    {
-        agent.speed = patrolSpeed;
-        if (patrolPoints.Count == 0) return;
-
-        if (HasReachedDestination())
-        {
-            waitTimer += Time.deltaTime;
-            if (waitTimer >= waitAtPoint)
-            {
-                waitTimer = 0f;
-                GoToNextPatrolPoint();
-            }
-        }
-    }
-
-    void GoToNextPatrolPoint()
-    {
-        agent.SetDestination(patrolPoints[currentPatrolIndex].position);
-        currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Count;
-    }
-
-    // ===== OLFATO =====
+    // Busca la marca de olor mas fuerte cerca y se mueve hacia ella
     void CheckForScent()
     {
         var markers = FindObjectsByType<ScentMarker>(FindObjectsSortMode.None);
@@ -192,7 +147,6 @@ public class GuardDogAI : MonoBehaviour
         }
     }
 
-    // ===== TRACKING =====
     void Track()
     {
         agent.speed = trackingSpeed;
@@ -238,13 +192,12 @@ public class GuardDogAI : MonoBehaviour
         if (patrolPoints.Count > 0) GoToNextPatrolPoint();
     }
 
-    // ===== MORDIDA =====
     void CheckBite()
     {
         if (player == null) return;
         if (isStunned) return;
 
-        // MODIFICADO: Si el jugador está escondido, el perro no puede iniciar la mordida ni arrastrarlo
+        // Si el jugador esta escondido, el perro no puede morderlo
         if (playerCtrl != null && playerCtrl.isHidden) return;
 
         if (Vector3.Distance(transform.position, player.position) < biteDistance)
@@ -259,52 +212,43 @@ public class GuardDogAI : MonoBehaviour
         {
             float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
-            // Si el jugador se esconde dentro de su rango de olfato/visión
             if (distanceToPlayer <= scentRange)
             {
-                // se verifica si el tacho actual del jugador es vulnerable
                 bool esTachoVulnerable = playerCtrl.currentHidingSpot != null && playerCtrl.currentHidingSpot.isVulnerableToDog;
 
-                // Si el tacho es de los tirados y el perro ya viene persiguiendo al jugador , el perro lo agarra sin necesidad de esperar el minijuego
+                // Si el tacho es de los tirados y el perro viene persiguiendo, lo agarra sin minijuego
                 if (esTachoVulnerable && currentState == DogState.Tracking)
                 {
                     Debug.Log("El perro se mete al tacho tirado a sacarte.");
-
-                    // Forzamos la salida del estado oculto del jugador de manera inmediata
-                    // Volvemos a activar su render, colisiones y cámara para que la animación de arrastrar funcione bien
                     playerCtrl.ExitHide(playerCtrl.currentHidingSpot.puntoSalida);
-
-                    // Iniciamos el arrastre instantáneo hacia el Warden
                     StartDragging();
                     return;
                 }
-                // Detener el agente por completo en su posición actual frente al tacho
+
                 agent.isStopped = true;
                 agent.velocity = Vector3.zero;
 
-                // Hacer que el perro rote suavemente para mirar fijamente al tacho
+                // Rotamos al perro para que mire fijamente al tacho
                 Vector3 dirToPlayer = (player.position - transform.position).normalized;
-                dirToPlayer.y = 0; // Evita que el perro se incline hacia arriba o abajo
+                dirToPlayer.y = 0;
                 if (dirToPlayer != Vector3.zero)
                 {
                     transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(dirToPlayer), Time.deltaTime * 5f);
                 }
 
-                //Alertar constantemente al Warden de la posición del tacho
-                Transform warden = FindNearestWardenTransform();
+                // ===== USO DEL HELPER ESTATICO DE EnemyBase =====
+                Transform warden = EnemyBase.FindNearestWardenTransform(transform.position);
                 if (warden != null)
                 {
                     var wAI = warden.GetComponent<WardenAI>();
                     if (wAI != null)
                     {
-                        // Le manda la posición exacta del tacho para que el policía camine hacia ahí
                         wAI.AlertToPosition(player.position);
-                        Debug.Log("El perro detectó el rastro en el tacho y llamó al Warden.");
+                        Debug.Log("El perro detecto el rastro en el tacho y llamo al Warden.");
                     }
                 }
                 else
                 {
-                    // Si el jugador se escondió lejísimos del perro fuera de su rango, el perro sigue patrullando
                     if (agent.isStopped) agent.isStopped = false;
                     ReturnToPatrol();
                 }
@@ -322,7 +266,7 @@ public class GuardDogAI : MonoBehaviour
     {
         if (playerCtrl != null) playerCtrl.SetControlsEnabled(false);
 
-        Transform target = FindNearestWardenTransform();
+        Transform target = EnemyBase.FindNearestWardenTransform(transform.position);
         if (target == null) target = transform;
 
         var warden = target.GetComponent<WardenAI>();
@@ -352,8 +296,7 @@ public class GuardDogAI : MonoBehaviour
             yield return null;
         }
 
-        // El jugador zafo
-        // El jugador zafo
+        // El jugador zafo del minijuego
         if (playerCtrl != null) playerCtrl.SetControlsEnabled(true);
         StartCoroutine(StunAndKnockback());
     }
@@ -366,16 +309,14 @@ public class GuardDogAI : MonoBehaviour
         Vector3 knockbackDir = -transform.forward;
         Vector3 destination = transform.position + knockbackDir * knockbackDistance;
 
-        // Si el destino esta en el NavMesh, lo usa, sino se queda donde esta
-        if (UnityEngine.AI.NavMesh.SamplePosition(destination, out UnityEngine.AI.NavMeshHit hit, knockbackDistance, UnityEngine.AI.NavMesh.AllAreas))
+        if (NavMesh.SamplePosition(destination, out NavMeshHit hit, knockbackDistance, NavMesh.AllAreas))
         {
             agent.SetDestination(hit.position);
         }
 
-        // Cambia de estado a Patrolling pero seguira aturdido por X segundos
         currentState = DogState.Patrolling;
 
-        // Aturdido: no muerde, no rastrea, solo retrocede
+        // Aturdido X segundos: no muerde, no rastrea
         float timer = 0f;
         while (timer < stunAfterEscape)
         {
@@ -385,25 +326,9 @@ public class GuardDogAI : MonoBehaviour
 
         isStunned = false;
 
-        // Despues del stun, vuelve a patrullar normal
         if (patrolPoints.Count > 0) GoToNextPatrolPoint();
     }
 
-    Transform FindNearestWardenTransform()
-    {
-        var wardens = FindObjectsByType<WardenAI>(FindObjectsSortMode.None);
-        Transform closest = null;
-        float minDist = float.MaxValue;
-        foreach (var w in wardens)
-        {
-            if (w == null) continue;
-            float d = Vector3.Distance(transform.position, w.transform.position);
-            if (d < minDist) { minDist = d; closest = w.transform; }
-        }
-        return closest;
-    }
-
-    // ===== MINIJUEGO =====
     void StartEscapeMinigame()
     {
         if (escapeMinigame == null)
@@ -427,14 +352,13 @@ public class GuardDogAI : MonoBehaviour
 
         if (!success)
         {
-            // Si fallo, lo arrastra hasta el Warden
             StartCoroutine(KeepDragging());
         }
     }
 
     IEnumerator KeepDragging()
     {
-        Transform target = FindNearestWardenTransform();
+        Transform target = EnemyBase.FindNearestWardenTransform(transform.position);
         if (target == null) target = transform;
 
         while (true)
@@ -464,12 +388,6 @@ public class GuardDogAI : MonoBehaviour
         minigameActive = false;
     }
 
-    // ===== UTIL =====
-    bool HasReachedDestination()
-    {
-        return !agent.pathPending && agent.remainingDistance < 0.5f;
-    }
-
     void OnDrawGizmos()
     {
         if (!showGizmo) return;
@@ -481,15 +399,14 @@ public class GuardDogAI : MonoBehaviour
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, biteDistance);
     }
-    void ApplyDayNightModifiers()
-    {
-        if (GameManager.Instance == null) return;
 
-        float dayProgress = GameManager.Instance.GetDayProgress01();
-        float darkness = 1f - dayProgress;
+    protected override void ApplyDayNightModifiers()
+    {
+        base.ApplyDayNightModifiers();
+        if (GameManager.Instance == null) return;
+        float darkness = 1f - GameManager.Instance.GetDayProgress01();
 
         scentRange = Mathf.Lerp(baseScentRange, baseScentRange * nightScentRangeMultiplier, darkness);
-        patrolSpeed = Mathf.Lerp(basePatrolSpeed, basePatrolSpeed * nightSpeedMultiplier, darkness);
         trackingSpeed = Mathf.Lerp(baseTrackingSpeed, baseTrackingSpeed * nightSpeedMultiplier, darkness);
         stunAfterEscape = Mathf.Lerp(baseStunAfterEscape, baseStunAfterEscape * nightStunMultiplier, darkness);
     }

@@ -1,10 +1,10 @@
 using UnityEngine;
+using AnteNoctem.Interactions;
 
 [RequireComponent(typeof(Collider))]
-public class StealableObject : MonoBehaviour
+public class StealableObject : MonoBehaviour, IInteractable
 {
     [Header("Interaccion")]
-    public KeyCode interactKey = KeyCode.E;
     public string playerTag = "Player";
     public bool oneTimeSteal = true;
     public float cooldown = 2f;
@@ -16,7 +16,6 @@ public class StealableObject : MonoBehaviour
     [Header("Debug")]
     public bool debugLogs = false;
 
-    private bool playerInRange = false;
     private bool alreadyStolen = false;
     private float nextStealTime = 0f;
 
@@ -26,22 +25,21 @@ public class StealableObject : MonoBehaviour
         if (col != null) col.isTrigger = true;
     }
 
-    void Update()
-    {
-        if (!playerInRange) return;
-        if (oneTimeSteal && alreadyStolen) return;
-        if (Time.time < nextStealTime) return;
+    // ===== IInteractable =====
+    public string GetPromptText() => "Apretá E para robar";
 
-        if (Input.GetKeyDown(interactKey))
-        {
-            Steal();
-        }
+    public bool CanInteract()
+    {
+        if (oneTimeSteal && alreadyStolen) return false;
+        if (Time.time < nextStealTime) return false;
+        return true;
     }
 
-    void Steal()
+    public void Interact(PlayerController player)
     {
-        int points;
+        if (!CanInteract()) return;
 
+        int points;
         if (RobberySystem.Instance != null)
         {
             points = RobberySystem.Instance.AwardStealPoints("Robo en objeto");
@@ -58,28 +56,8 @@ public class StealableObject : MonoBehaviour
             return;
         }
 
-        if (debugLogs)
-        {
-            Debug.Log(name + ": robo exitoso (+" + points + ")");
-        }
-
+        if (debugLogs) Debug.Log(name + ": robo exitoso (+" + points + ")");
         alreadyStolen = true;
         nextStealTime = Time.time + Mathf.Max(0f, cooldown);
-    }
-
-    void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag(playerTag) || other.transform.root.CompareTag(playerTag))
-        {
-            playerInRange = true;
-        }
-    }
-
-    void OnTriggerExit(Collider other)
-    {
-        if (other.CompareTag(playerTag) || other.transform.root.CompareTag(playerTag))
-        {
-            playerInRange = false;
-        }
     }
 }

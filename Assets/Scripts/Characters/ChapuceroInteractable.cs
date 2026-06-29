@@ -1,63 +1,44 @@
 using UnityEngine;
+using AnteNoctem.Interactions;
 
 [RequireComponent(typeof(Collider))]
-public class ChapuceroInteractable : MonoBehaviour
+// ===== INTERFACE =====
+// Tambien implementa la interface IInteractable: eso significa que cumple el "contrato"
+// que define IInteractable y debe tener los metodos GetPromptText, CanInteract e Interact.
+public class ChapuceroInteractable : MonoBehaviour, IInteractable
 {
     [Header("Interaccion")]
     public string playerTag = "Player";
-    public KeyCode interactKey = KeyCode.E;
 
-    [Header("UI prompt (opcional)")]
-    public GameObject interactionPrompt; // texto "Presiona E para hablar"
-
-    private bool playerInRange = false;
-
+    // Unity llama Reset() al agregar el componente: forzamos que el collider sea trigger
     void Reset()
     {
         var col = GetComponent<Collider>();
         if (col != null) col.isTrigger = true;
     }
 
-    void Start()
+    // Metodos del contrato IInteractable
+
+    public string GetPromptText() => "Apretá E para hablar con el Chapucero";
+
+    public bool CanInteract()
     {
-        if (interactionPrompt != null) interactionPrompt.SetActive(false);
+        // Si el mapa de la base esta abierto, no se puede hablar con el chapucero
+        if (BaseMapView.Instance != null && BaseMapView.Instance.IsOpen) return false;
+        return true;
     }
 
-    void Update()
+    public void Interact(PlayerController player)
     {
-        if (!playerInRange) return;
+        if (!CanInteract()) return;
 
-        if (BaseMapView.Instance != null && BaseMapView.Instance.IsOpen)
-            return;
-
-        if (Input.GetKeyDown(interactKey))
+        if (ChapuceroShop.Instance != null)
         {
-            if (ChapuceroShop.Instance != null)
-            {
-                ChapuceroShop.Instance.OpenShop();
-            }
-            else
-            {
-                Debug.LogWarning("ChapuceroInteractable: no se encontro ChapuceroShop.Instance");
-            }
+            ChapuceroShop.Instance.OpenShop();
         }
-    }
-
-    void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag(playerTag) || other.transform.root.CompareTag(playerTag))
+        else
         {
-            playerInRange = true;
-            if (interactionPrompt != null) interactionPrompt.SetActive(true);
-        }
-    }
-
-    void OnTriggerExit(Collider other)
-    {
-        if (other.CompareTag(playerTag) || other.transform.root.CompareTag(playerTag))
-        {
-            playerInRange = false;
-            if (interactionPrompt != null) interactionPrompt.SetActive(false);
+            Debug.LogWarning("ChapuceroInteractable: no se encontro ChapuceroShop.Instance");
         }
     }
 }

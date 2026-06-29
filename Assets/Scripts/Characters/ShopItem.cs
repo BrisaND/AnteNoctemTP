@@ -4,11 +4,14 @@ using UnityEngine;
 [Serializable]
 public class ShopItem
 {
-    public string itemId; // "boots", "socks", "gloves"
-    public string displayName; // "Botas Veloces"
+    // ID interno usado en el codigo para identificar el item ("boots", "socks", "gloves")
+    public string itemId;
+    // Nombre que ve el jugador en la UI
+    public string displayName;
 
+    // Descripcion que dice el chapucero cuando el jugador selecciona el item
     [TextArea(2, 4)]
-    public string description; // descripcion narrativa que dice el chapucero
+    public string description;
 
     [Header("Costo")]
     public int hiloCost;

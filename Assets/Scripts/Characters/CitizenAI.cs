@@ -6,9 +6,12 @@ using System.Collections;
 [RequireComponent(typeof(NavMeshAgent))]
 public class CitizenAI : MonoBehaviour
 {
-        public enum CitizenState { Patrolling, Detaining }
+    // ===== ENUM =====
+    // Los enums son una forma limpia de listar opciones que una variable puede tomar.
+    // En vez de usar numeros sueltos (0 = patrullando, 1 = deteniendo), usamos nombres.
+    public enum CitizenState { Patrolling, Detaining }
 
-        [Header("Configuración")]
+    [Header("Configuración")]
     public bool randomizeDifficulty = true;
     public RobberySystem.DifficultyLevel difficulty = RobberySystem.DifficultyLevel.Easy;
 
@@ -18,40 +21,42 @@ public class CitizenAI : MonoBehaviour
     [Header("Debug")]
     public bool showGizmo = true;
 
+    // ===== GETTER/SETTER =====
+    // Cualquiera puede leer el estado actual, pero solo este script puede cambiarlo
     public CitizenState currentState { get; private set; } = CitizenState.Patrolling;
 
-    private float _detentionDuration = 4f; //Detencion (si falla)
-    private float _interactDistance = 2.8f; //Distancia de interacci�n con el player
+    // ===== ENCAPSULAMIENTO =====
+    // Variables privadas que nadie de afuera puede modificar
+    private float _detentionDuration = 4f;
+    private float _interactDistance = 2.8f;
+
+    // ===== COMPOSICION =====
+    // El ciudadano TIENE estos componentes adentro
     private NavMeshAgent agent;
     private Transform player;
     private PlayerController playerCtrl;
     private int currentPatrolIndex = 0;
 
-    // Nueva referencia al WardenAI
     private WardenAI warden;
 
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
-
-        // Buscar warden en la escena (puedes asignarlo por inspector si prefieres)
         if (warden == null) warden = FindFirstObjectByType<WardenAI>();
     }
 
-        void Start()
+    void Start()
+    {
+        // Decidimos la dificultad del SkillCheck con una tirada random
+        if (randomizeDifficulty)
         {
-            if (randomizeDifficulty)
-            {
-                float roll = Random.value; // Valor entre 0.0 y 1.0
-                if (roll < 0.6f) // 60% probabilidad
-                    difficulty = RobberySystem.DifficultyLevel.Easy;
-                else if (roll < 0.9f) // 30% probabilidad (0.6 a 0.9)
-                    difficulty = RobberySystem.DifficultyLevel.Medium;
-                else // 10% probabilidad (0.9 a 1.0)
-                    difficulty = RobberySystem.DifficultyLevel.Hard;
-            }
+            float roll = Random.value;
+            if (roll < 0.6f) difficulty = RobberySystem.DifficultyLevel.Easy;
+            else if (roll < 0.9f) difficulty = RobberySystem.DifficultyLevel.Medium;
+            else difficulty = RobberySystem.DifficultyLevel.Hard;
+        }
 
-            var p = GameObject.FindGameObjectWithTag("Player");
+        var p = GameObject.FindGameObjectWithTag("Player");
         if (p != null)
         {
             player = p.transform;
@@ -62,7 +67,6 @@ public class CitizenAI : MonoBehaviour
 
     void Update()
     {
-        // No hacer nada si el juego no est� en Playing
         if (GameManager.Instance != null && GameManager.Instance.gameState != GameManager.GameState.Playing) return;
 
         switch (currentState)
@@ -79,12 +83,11 @@ public class CitizenAI : MonoBehaviour
     void Patrol()
     {
         if (patrolPoints.Count == 0) return;
-
         agent.speed = 2f;
 
+        // Al llegar, va al siguiente punto sin detenerse
         if (HasReachedDestination())
         {
-            // No se detiene: simplemente fija el siguiente destino y sigue caminando
             GoToNextPatrolPoint();
         }
     }
@@ -105,21 +108,19 @@ public class CitizenAI : MonoBehaviour
 
     void StartInteraction()
     {
-        // No iniciar si no hay QuickEventManager o ya hay un evento activo
         if (QuickEventManager.Instance == null) return;
         if (QuickEventManager.Instance.IsActive) return;
 
-        // No iniciar si el juego no esta en Playing
         if (GameManager.Instance != null &&
             GameManager.Instance.gameState != GameManager.GameState.Playing) return;
 
         QuickEventManager.Instance.StartQuickEvent(this);
     }
 
-    // Invocado por QuickEventManager cuando termina (true = acierto)
+    // El QuickEventManager nos avisa si el jugador zafo del skillcheck
     public void OnPlayerInteractionResult(bool success)
     {
-                if (success)
+        if (success)
         {
             if (RobberySystem.Instance != null)
             {
@@ -141,19 +142,19 @@ public class CitizenAI : MonoBehaviour
     {
         currentState = CitizenState.Detaining;
 
-        // Avisar al warden para que se acerque y ejecute su l�gica de kill
+        // Avisar al warden para que se acerque
         if (warden != null && player != null)
         {
             warden.AlertToPosition(player.position);
         }
 
-        // detener al agente mientras detiene al jugador para mantener la interacci�n coherente
         agent.isStopped = true;
         agent.updatePosition = false;
         agent.velocity = Vector3.zero;
 
         if (playerCtrl != null) playerCtrl.SetControlsEnabled(false);
 
+        // Mantener al jugador agarrado por X segundos
         Vector3 holdOffset = transform.forward * 0.8f;
         float timer = 0f;
         while (timer < _detentionDuration)
@@ -167,7 +168,6 @@ public class CitizenAI : MonoBehaviour
         }
 
         if (playerCtrl != null) playerCtrl.SetControlsEnabled(true);
-
         ResumePatrol();
     }
 

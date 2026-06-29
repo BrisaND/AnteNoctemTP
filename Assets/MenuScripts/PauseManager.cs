@@ -1,20 +1,19 @@
 using UnityEngine.SceneManagement;
 using UnityEngine;
+using AnteNoctem.Core;
 
-public class PauseManager : MonoBehaviour
+public class PauseManager : Singleton<PauseManager>
 {
-    public static PauseManager Instance { get; private set; }
-
     private bool isPaused = false;
     private GameObject canvas;
     private GameObject pausePanel;
 
     public bool IsPaused => isPaused;
 
-    void Awake()
+    protected override void Awake()
     {
-        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-        Instance = this;
+        base.Awake();
+        if (Instance != this) return;
 
         canvas = GameObject.Find("PauseCanvas");
         if (canvas != null)

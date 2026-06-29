@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using AnteNoctem.Core;
 
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerController : MonoBehaviour
@@ -127,7 +128,7 @@ public class PlayerController : MonoBehaviour
     {
         if (animator == null) return;
 
-        bool isMoving = moveInput.sqrMagnitude > 0.01f;
+       bool isMoving = !moveInput.IsNearlyZero();
 
         animator.SetBool("isWalking", isMoving && !isCrouching && !Input.GetKey(KeyCode.LeftShift));
         animator.SetBool("isRunning", isMoving && !isCrouching && Input.GetKey(KeyCode.LeftShift));
@@ -180,7 +181,7 @@ public class PlayerController : MonoBehaviour
 
     void UpdateState()
     {
-        bool isMoving = moveInput.sqrMagnitude > 0.01f;
+        bool isMoving = !moveInput.IsNearlyZero();
         bool isRunning = Input.GetKey(KeyCode.LeftShift);
 
         if (!isMoving)

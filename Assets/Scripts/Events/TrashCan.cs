@@ -2,13 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using AnteNoctem.Interactions;
 
 [RequireComponent(typeof(Collider))]
-public class TrashCan : MonoBehaviour
+public class TrashCan : MonoBehaviour, IInteractable
 {
     [Header("Interacción")]
     public string playerTag = "Player";
-    public KeyCode interactKey = KeyCode.E;
     public bool debugLogs = true;
 
     [Header("Animación del Tacho")]
@@ -25,18 +25,13 @@ public class TrashCan : MonoBehaviour
     public string flowerAttackTrigger = "AttackTrigger";
     [Range(0f, 1f)]
     public float flowerChance = 0.2f;
-
-    [Tooltip("¿Cuántos segundos se queda la flor GIGANTE atrapando al jugador despues de fallar?")]
     public float catchDuration = 3f;
-
     public bool deactivateFlowerAtStart = true;
     public UnityEvent OnFlowerSpawned;
 
     [Header("SkillCheck")]
-    [Tooltip("Referencia al componente EventFlower (skillcheck) en escena.")]
     public EventFlower quickEventFlower;
     public int quickRequiredPresses = 10;
-    [Tooltip("Tiempo límite que tiene el jugador para resolver el SkillCheck")]
     public float skillCheckTimeLimit = 4f;
 
     [Header("Control del jugador")]
@@ -48,7 +43,7 @@ public class TrashCan : MonoBehaviour
     List<Behaviour> disabledMovementComponents = new List<Behaviour>();
 
     bool interactionInProgress = false;
-    bool isPunishing = false; // evitar que OnTriggerExit cierre el tacho durante el ataque
+    bool isPunishing = false;
 
     void Start()
     {
@@ -63,17 +58,15 @@ public class TrashCan : MonoBehaviour
         if (gm != null) OnScoreGained.AddListener(gm.AddScore);
     }
 
-    void Update()
-    {
-        if (Input.GetKeyDown(interactKey))
-        {
-            if (!playerInRange) return;
-            InteractOnce();
-        }
-    }
+    // ===== IInteractable =====
+    public string GetPromptText() => "Apretá E para revolver la basura";
 
-    void InteractOnce()
+    public bool CanInteract() => !interactionInProgress;
+
+    public void Interact(PlayerController player)
     {
+        currentPlayer = player.gameObject;
+        currentPlayerController = player;
         if (interactionInProgress) return;
         StartCoroutine(HandleSingleInteraction());
     }
@@ -85,11 +78,9 @@ public class TrashCan : MonoBehaviour
 
         if (Random.value < flowerChance)
         {
-            // 1. Abrimos el tacho y mostramos la flor
             OpenTrashCanAndShowFlower();
             OnFlowerSpawned?.Invoke();
 
-            // Espera obligatoria para que el Animator complete la transición de apertura
             yield return new WaitForSeconds(0.2f);
 
             if (pausePlayerMovement && currentPlayer != null)
@@ -123,10 +114,8 @@ public class TrashCan : MonoBehaviour
             quickEventFlower.duration = tiempoSkillCheck;
             quickEventFlower.StartSkillCheck();
 
-            // Mantiene la tapa arriba y la flor activa mientras dure el minijuego
             while (!resultReceived)
             {
-                // Forzamos el estado del Animator en cada frame por si otra función intenta apagarlo
                 if (trashCanAnimator != null) trashCanAnimator.SetBool(animatorBoolParam, true);
                 yield return null;
             }
@@ -135,24 +124,15 @@ public class TrashCan : MonoBehaviour
 
             if (success)
             {
-                // ÉXITO: Recién acá cerramos todo de golpe
                 AwardStealPointsFromTrashCan();
                 CloseTrashCanAndHideFlower();
                 RestorePlayerMovement();
             }
             else
             {
-                // 2. FASE ATAQUE (FALLÓ): Activamos el castigo manteniendo la tapa levantada
                 isPunishing = true;
-
-                if (flowerAnimator != null)
-                {
-                    flowerAnimator.SetTrigger(flowerAttackTrigger);
-                }
-
+                if (flowerAnimator != null) flowerAnimator.SetTrigger(flowerAttackTrigger);
                 yield return new WaitForSeconds(catchDuration);
-
-                // 3. FIN DEL CASTIGO: Liberamos y cerramos
                 isPunishing = false;
                 RestorePlayerMovement();
                 CloseTrashCanAndHideFlower();
@@ -164,7 +144,6 @@ public class TrashCan : MonoBehaviour
             StartCoroutine(QuickOpenCloseAnimation());
         }
 
-        // Bloqueamos salidas accidentales hasta este frame exacto
         interactionInProgress = false;
     }
 
@@ -224,28 +203,11 @@ public class TrashCan : MonoBehaviour
         else if (GameManager.Instance != null) GameManager.Instance.AddScore(Random.Range(5, 16));
     }
 
-    void OnTriggerEnter(Collider other)
-    {
-        PlayerController pc = other.GetComponentInParent<PlayerController>();
-        if (pc != null)
-        {
-            playerInRange = true;
-            currentPlayer = pc.gameObject;
-            currentPlayerController = pc;
-        }
-    }
-
     void OnTriggerExit(Collider other)
     {
         if (other.CompareTag(playerTag) || other.transform.root.CompareTag(playerTag))
         {
-            // --- NUEVO FILTRO ---
-            // Si el minijuego de la flor está en progreso o castigando,
-            // bloqueamos por completo que este método cierre la tapa o limpie los datos.
-            if (interactionInProgress || isPunishing)
-            {
-                return;
-            }
+            if (interactionInProgress || isPunishing) return;
 
             playerInRange = false;
             RestorePlayerMovement();

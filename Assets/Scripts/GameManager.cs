@@ -2,11 +2,15 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using AnteNoctem.Core;
 
-public class GameManager : MonoBehaviour
+// ===== GENERICS + HERENCIA =====
+// Hereda de Singleton<GameManager>. Solo puede haber un GameManager en toda la escena
+// y se accede desde cualquier script con GameManager.Instance.
+public class GameManager : Singleton<GameManager>
 {
-    public static GameManager Instance { get; private set; }
-
+    // ===== ENUMS =====
+    // Listamos los posibles estados del dia y del juego con nombres claros en vez de numeros sueltos
     public enum DayState { Dia, Tarde, Noche }
     public enum GameState { Playing, GameOver, Victory }
 
@@ -17,6 +21,8 @@ public class GameManager : MonoBehaviour
     [Header("Timer")]
     [Tooltip("Duracion total del nivel en segundos")]
     public float levelDuration = 180f;
+    // ===== GETTER/SETTER =====
+    // Cualquiera puede leer currentTime, pero solo el GameManager puede modificarlo
     public float currentTime { get; private set; }
 
     [Header("Score")]
@@ -40,20 +46,21 @@ public class GameManager : MonoBehaviour
     [Range(0f, 1f)] public float tardeThreshold = 0.5f;
     [Range(0f, 1f)] public float nocheThreshold = 0.2f;
 
-    public System.Action<DayState> OnDayStateChanged;
+    // ===== DELEGATES =====
+    // Estos delegates explicitos los declaramos en GameDelegates.cs.
+    // Cuando algo importante pasa en el juego, los "invocamos" y todos los scripts que se suscribieron se enteran.
+    public GameDelegates.DayStateChangedHandler OnDayStateChanged;
+    public GameDelegates.ScoreChangedHandler OnScoreChanged;
+
+    // ===== EVENTS =====
+    // Action es un delegate predefinido de .NET. Lo usamos para avisar cuando cambia el estado del juego.
     public System.Action<GameState> OnGameStateChanged;
-    public System.Action<int> OnScoreChanged;
 
     private bool hasNotifiedQuota = false;
 
-    void Awake()
-    {
-        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-        Instance = this;
-    }
-
     void Start()
     {
+        // Si estamos en la escena Base (pueblo), desactivamos el timer
         if (SceneManager.GetActiveScene().name == "Base")
             isHubScene = true;
 
@@ -68,19 +75,17 @@ public class GameManager : MonoBehaviour
         if (isHubScene) return;
         if (gameState != GameState.Playing) return;
 
-        // Solo descontamos tiempo si no ha llegado a 0
         if (currentTime > 0f)
         {
             currentTime -= Time.deltaTime;
             UpdateDayState();
 
+            // Si se acaba el tiempo y no llego a la cuota, pierde.
+            // Si ya tiene la cuota, no lo mandamos a victoria: tiene que llegar a la puerta de salida.
             if (currentTime <= 0f)
             {
                 currentTime = 0f;
 
-                // --- NUEVA LÓGICA DE TIEMPO ---
-                // Si se acaba el tiempo y NO llegó a los puntos obligatorios, pierde inmediatamente.
-                // Si YA tiene los puntos, NO lo mandamos a Victoria. Se queda en el nivel para farmear.
                 if (currentScore < targetScore)
                 {
                     GameOver("Se hizo de noche y no juntaste la cuota mínima.");
@@ -93,6 +98,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // Calculamos en que parte del dia estamos segun el tiempo que queda
     void UpdateDayState()
     {
         float pct = currentTime / levelDuration;
@@ -101,6 +107,7 @@ public class GameManager : MonoBehaviour
         else if (pct > nocheThreshold) newState = DayState.Tarde;
         else newState = DayState.Noche;
 
+        // Si cambio de estado, avisamos a todos los que esten suscriptos al delegate
         if (newState != dayState)
         {
             dayState = newState;
@@ -108,6 +115,10 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    
+    /// Devuelve el progreso del dia entre 0 y 1. 1 = inicio del nivel (dia), 0 = se acabo el tiempo (noche).
+    /// Los enemigos y el DayNightCycle lo usan para volverse mas peligrosos a medida que oscurece.
+    
     public float GetDayProgress01()
     {
         if (levelDuration <= 0f) return 0f;
@@ -117,8 +128,10 @@ public class GameManager : MonoBehaviour
     public void AddScore(int amount)
     {
         currentScore += amount;
-        OnScoreChanged?.Invoke(currentScore);
+        // Invocamos el delegate: avisa a la UI y a quien este suscripto que cambio el puntaje
+        OnScoreChanged?.Invoke(currentScore, targetScore);
 
+        // Si llego a la cuota minima, le avisamos al jugador
         if (currentScore >= targetScore && gameState == GameState.Playing)
         {
             if (autoWinOnTargetScore)
@@ -136,17 +149,13 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // Muestra un cartel "Ya tienes la cuota, busca la salida!" por unos segundos
     private IEnumerator ShowQuotaNotificationRoutine()
     {
         if (quotaNotificationCanvas != null)
         {
-            // Forzamos la activación del GameObject completo
             quotaNotificationCanvas.SetActive(true);
-
-            // Esperamos los segundos configurados en el inspector
             yield return new WaitForSeconds(notificationDuration);
-
-            // Lo volvemos a apagar por completo
             quotaNotificationCanvas.SetActive(false);
         }
     }
@@ -157,6 +166,7 @@ public class GameManager : MonoBehaviour
         gameState = GameState.GameOver;
         OnGameStateChanged?.Invoke(gameState);
 
+        // Si habia un QuickEvent activo, lo cerramos
         if (QuickEventManager.Instance != null && QuickEventManager.Instance.IsActive)
         {
             if (QuickEventManager.Instance.quickEventCanvas != null)
@@ -178,15 +188,13 @@ public class GameManager : MonoBehaviour
             if (QuickEventManager.Instance.quickEventCanvas != null)
                 QuickEventManager.Instance.quickEventCanvas.SetActive(false);
         }
-
     }
 
+    // Lo llama ExitZone cuando el jugador llega a la puerta de salida con la cuota completa
     public void CompleteLevelAndLoadVictory()
     {
         Time.timeScale = 1f;
         UnlockCursor();
-
-        // RECIÉN ACÁ HACEMOS EL CAMBIO DE ESCENA
         Debug.Log("Cargando pantalla de victoria desde la puerta de escape...");
         SceneManager.LoadScene("Victory");
     }
@@ -214,6 +222,7 @@ public class GameManager : MonoBehaviour
         SceneManager.LoadScene(scene.name);
     }
 
+    // Helper para mostrar el tiempo en formato MM:SS en la UI
     public string GetTimeFormatted()
     {
         int min = Mathf.FloorToInt(currentTime / 60f);

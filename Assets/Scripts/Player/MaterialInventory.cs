@@ -1,11 +1,10 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System;
+using AnteNoctem.Core;
 
-public class MaterialInventory : MonoBehaviour
+public class MaterialInventory : Singleton<MaterialInventory>
 {
-    public static MaterialInventory Instance { get; private set; }
-
     public enum MaterialType { Hilo, Tela, Cuero }
 
     // Inventario en memoria
@@ -23,18 +22,11 @@ public class MaterialInventory : MonoBehaviour
     public float telaWeight = 30f;   // poco comun
     public float cueroWeight = 10f;  // muy raro
 
-    void Awake()
+    protected override void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
+        base.Awake();
+        if (Instance != this) return;
 
-        Instance = this;
-        DontDestroyOnLoad(gameObject);
-
-        // Inicializamos el inventario en 0
         foreach (MaterialType mat in Enum.GetValues(typeof(MaterialType)))
         {
             inventory[mat] = 0;

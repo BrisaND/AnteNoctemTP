@@ -1,9 +1,8 @@
 using UnityEngine;
+using AnteNoctem.Core;
 
-public class QuickEventManager : MonoBehaviour
+public class QuickEventManager : Singleton<QuickEventManager>
 {
-    public static QuickEventManager Instance { get; private set; }
-
     [Header("UI")]
     public GameObject quickEventCanvas;
     public SkillCheck skillCheck;
@@ -12,12 +11,6 @@ public class QuickEventManager : MonoBehaviour
     private bool isActive = false;
 
     public bool IsActive => isActive;
-
-    void Awake()
-    {
-        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-        Instance = this;
-    }
 
     void Start()
     {

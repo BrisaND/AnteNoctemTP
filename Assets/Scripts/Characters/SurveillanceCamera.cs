@@ -1,4 +1,5 @@
 using UnityEngine;
+using AnteNoctem.Enemies;
 
 public class SurveillanceCamera : MonoBehaviour
 {
@@ -44,6 +45,7 @@ public class SurveillanceCamera : MonoBehaviour
     private float detectionTimer = 0f;
     private float lastAlertTime = -999f;
 
+    // ===== GETTER/SETTER =====
     public bool IsDetecting { get; private set; } = false;
 
     void Start()
@@ -66,7 +68,6 @@ public class SurveillanceCamera : MonoBehaviour
         if (GameManager.Instance != null && GameManager.Instance.gameState != GameManager.GameState.Playing) return;
 
         ApplyDayNightModifiers();
-
         Swing();
 
         bool sees = CanSeePlayer();
@@ -87,6 +88,7 @@ public class SurveillanceCamera : MonoBehaviour
         }
     }
 
+    // Hace oscilar la camara como un barrido de seguridad
     void Swing()
     {
         float t = Mathf.PingPong(Time.time * swingSpeed / (swingAngle * 2f), 1f);
@@ -101,6 +103,7 @@ public class SurveillanceCamera : MonoBehaviour
         Vector3 toPlayer = (player.position + Vector3.up * 1f) - transform.position;
         float dist = toPlayer.magnitude;
 
+        // Si esta agachado, la camara lo ve a menor distancia
         float effectiveDistance = viewDistance;
         if (crouchReducesDetection && playerCtrl != null && playerCtrl.isCrouching)
         {
@@ -120,32 +123,28 @@ public class SurveillanceCamera : MonoBehaviour
         return true;
     }
 
+    // Avisa al Warden mas cercano usando el helper estatico de EnemyBase
     void TryAlertWardens()
     {
         if (Time.time - lastAlertTime < alertCooldown) return;
         lastAlertTime = Time.time;
 
-        var wardens = FindObjectsByType<WardenAI>(FindObjectsSortMode.None);
-        WardenAI closest = null;
-        float minDist = float.MaxValue;
-        foreach (var w in wardens)
+        // ===== USO DEL HELPER ESTATICO DE EnemyBase =====
+        Transform wardenTransform = EnemyBase.FindNearestWardenTransform(player.position);
+        if (wardenTransform != null)
         {
-            if (w == null) continue;
-            float d = Vector3.Distance(w.transform.position, player.position);
-            if (d < minDist) { minDist = d; closest = w; }
-        }
-
-        if (closest != null)
-        {
-            closest.AlertToPosition(player.position);
-            Debug.Log("Camara alerto al Warden");
+            var warden = wardenTransform.GetComponent<WardenAI>();
+            if (warden != null)
+            {
+                warden.AlertToPosition(player.position);
+                Debug.Log("Camara alerto al Warden");
+            }
         }
     }
 
     void OnDrawGizmos()
     {
         if (!showVisionGizmo) return;
-
         Gizmos.color = IsDetecting ? Color.red : Color.cyan;
 
         Vector3 leftDir = Quaternion.Euler(0, -viewAngle / 2f, 0) * transform.forward;

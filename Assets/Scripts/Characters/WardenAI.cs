@@ -2,15 +2,17 @@ using UnityEngine;
 using UnityEngine.AI;
 using System.Collections.Generic;
 using System.Collections;
+using AnteNoctem.Core;
+using AnteNoctem.Enemies;
 
-[RequireComponent(typeof(NavMeshAgent))]
-public class WardenAI : MonoBehaviour
+// ===== HERENCIA + CLASE ABSTRACTA =====
+// El Warden hereda de EnemyBase. Eso significa que automaticamente tiene patrolPoints,
+// el NavMeshAgent, el sistema de modificadores de noche, etc.
+// Acá solo agregamos lo unico del Warden: ver y oir al jugador, perseguirlo, buscarlo cuando lo pierde.
+public class WardenAI : EnemyBase
 {
+    // ===== ENUM =====
     public enum WardenState { Patrolling, Chasing, Searching }
-
-    [Header("Patrullaje")]
-    public List<Transform> patrolPoints = new List<Transform>();
-    public float waitAtPoint = 2f;
 
     [Header("Captura")]
     public float catchDistance = 1.5f;
@@ -26,7 +28,6 @@ public class WardenAI : MonoBehaviour
     public bool canHear = true;
 
     [Header("Velocidades")]
-    public float patrolSpeed = 2f;
     public float chaseSpeed = 5f;
 
     [Header("Busqueda (cuando lo pierde)")]
@@ -34,15 +35,11 @@ public class WardenAI : MonoBehaviour
     public float searchRadius = 5f;
 
     [Header("Modificadores de Noche")]
-    [Tooltip("Multiplicador para velocidades cuando es de noche (1 = igual, 1.5 = 50% mas rapido)")]
-    public float nightSpeedMultiplier = 1.5f;
     [Tooltip("Multiplicador para distancia de vision cuando es de noche")]
     public float nightViewDistanceMultiplier = 1.35f;
     [Tooltip("Multiplicador para angulo de vision cuando es de noche")]
     public float nightViewAngleMultiplier = 1.3f;
 
-    // Valores base guardados al inicio
-    private float basePatrolSpeed;
     private float baseChaseSpeed;
     private float baseViewDistance;
     private float baseViewAngle;
@@ -50,48 +47,43 @@ public class WardenAI : MonoBehaviour
     [Header("Debug")]
     public bool showVisionGizmo = true;
 
+    // ===== GETTER/SETTER =====
     public WardenState currentState { get; private set; } = WardenState.Patrolling;
-
-    private NavMeshAgent agent;
-    private Transform player;
-    private PlayerController playerCtrl;
-    private int currentPatrolIndex = 0;
-    private float waitTimer = 0f;
     private float searchTimer = 0f;
     private Vector3 lastKnownPosition;
 
-    // Coroutine de aproximación cuando es alertado por un ciudadano
     private Coroutine approachCoroutine;
 
-    void Awake()
+    // ===== METODO VIRTUAL SOBRESCRITO =====
+    // El Start original esta en EnemyBase. Lo sobrescribimos con 'override' para agregar nuestra logica.
+    // 'base.Start()' llama al Start del padre asi no perdemos su comportamiento.
+    protected override void Start()
     {
-        agent = GetComponent<NavMeshAgent>();
-    }
-
-    void Start()
-    {
-        basePatrolSpeed = patrolSpeed;
+        base.Start();
         baseChaseSpeed = chaseSpeed;
         baseViewDistance = viewDistance;
         baseViewAngle = viewAngle;
-
-        var p = GameObject.FindGameObjectWithTag("Player");
-        if (p != null)
-        {
-            player = p.transform;
-            playerCtrl = p.GetComponent<PlayerController>();
-        }
-        if (patrolPoints.Count > 0) GoToNextPatrolPoint();
     }
 
-    void Update()
+    protected override void Update()
     {
+        base.Update();
         if (GameManager.Instance != null && GameManager.Instance.gameState != GameManager.GameState.Playing) return;
 
-        ApplyDayNightModifiers();
+        HandleBehavior();
 
-        // NUEVO: Si el jugador está escondido con éxito, el policía pierde visión y audición directa.
-        // Solo puede llegar al tacho si fue alertado previamente por el perro o un ciudadano.
+        // Si el jugador esta a tiro y no esta escondido, lo atrapamos
+        if (player != null && !playerCtrl.isHidden && Vector3.Distance(transform.position, player.position) < catchDistance)
+        {
+            TriggerGameOver();
+        }
+    }
+
+    // ===== METODO ABSTRACTO IMPLEMENTADO =====
+    // EnemyBase nos obliga a implementar HandleBehavior. Aca definimos el comportamiento propio del Warden.
+    protected override void HandleBehavior()
+    {
+        // Si el jugador esta escondido en un tacho, el Warden no lo ve ni oye
         bool sees = (playerCtrl != null && playerCtrl.isHidden) ? false : CanSeePlayer();
         bool hears = (playerCtrl != null && playerCtrl.isHidden) ? false : (canHear && CanHearPlayer());
 
@@ -110,7 +102,7 @@ public class WardenAI : MonoBehaviour
                 }
                 else if (HasReachedDestination())
                 {
-                    StartSearch(); // Si llega al tacho y no te ve (porque estás adentro), empieza a buscar alrededor
+                    StartSearch();
                 }
                 break;
 
@@ -119,40 +111,8 @@ public class WardenAI : MonoBehaviour
                 if (sees || hears) StartChase();
                 break;
         }
-
-        // MODIFICADO: El chequeo de contacto físico no te mata si estás escondido dentro del tacho.
-        // Así el policía se parará al lado del tacho sin darte Game Over automático, dándote la chance de ver al policía desde la ranura en primera persona.
-        if (player != null && !playerCtrl.isHidden && Vector3.Distance(transform.position, player.position) < catchDistance)
-        {
-            TriggerGameOver();
-        }
     }
 
-    // ===== PATRULLAJE =====
-    void Patrol()
-    {
-        agent.speed = patrolSpeed;
-        if (patrolPoints.Count == 0) return;
-
-        if (HasReachedDestination())
-        {
-            waitTimer += Time.deltaTime;
-            if (waitTimer >= waitAtPoint)
-            {
-                waitTimer = 0f;
-                GoToNextPatrolPoint();
-            }
-        }
-    }
-
-    void GoToNextPatrolPoint()
-    {
-        if (patrolPoints.Count == 0) return;
-        agent.SetDestination(patrolPoints[currentPatrolIndex].position);
-        currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Count;
-    }
-
-    // ===== PERSECUCION =====
     void StartChase()
     {
         currentState = WardenState.Chasing;
@@ -165,7 +125,6 @@ public class WardenAI : MonoBehaviour
         agent.SetDestination(lastKnownPosition);
     }
 
-    // ===== BUSQUEDA =====
     void StartSearch()
     {
         currentState = WardenState.Searching;
@@ -195,7 +154,7 @@ public class WardenAI : MonoBehaviour
         }
     }
 
-    // ===== DETECCION =====
+    // Detecta si el jugador esta dentro del cono de vision y no hay obstaculos en el medio
     bool CanSeePlayer()
     {
         if (player == null) return false;
@@ -207,7 +166,6 @@ public class WardenAI : MonoBehaviour
         float angle = Vector3.Angle(transform.forward, toPlayer);
         if (angle > viewAngle / 2f) return false;
 
-        // raycast para ver si hay obstaculo
         if (Physics.Raycast(eyePos, toPlayer.normalized, out RaycastHit hit, dist, obstacleMask | playerMask))
         {
             if (((1 << hit.collider.gameObject.layer) & playerMask) != 0) return true;
@@ -216,6 +174,7 @@ public class WardenAI : MonoBehaviour
         return true;
     }
 
+    // Detecta si el jugador esta haciendo ruido cerca
     bool CanHearPlayer()
     {
         if (player == null || playerCtrl == null) return false;
@@ -223,24 +182,18 @@ public class WardenAI : MonoBehaviour
         return dist <= playerCtrl.currentNoiseRadius;
     }
 
-    bool HasReachedDestination()
-    {
-        return !agent.pathPending && agent.remainingDistance < 0.5f;
-    }
-
     void TriggerGameOver()
     {
         if (GameManager.Instance != null) GameManager.Instance.GameOver("Te atrapo un Warden");
     }
 
-    // Permite que cosas externas (camara, ciudadano) le avisen al warden
+    // Permite que otras cosas (camara, ciudadano) le avisen al warden donde esta el jugador
     public void AlertToPosition(Vector3 pos)
     {
         lastKnownPosition = pos;
         StartChase();
     }
 
-    // Acercarse a un objetivo y ejecutar la acción de "matar"
     public void ApproachAndExecuteKill(Transform target)
     {
         if (target == null) return;
@@ -260,7 +213,6 @@ public class WardenAI : MonoBehaviour
 
             if (!agent.pathPending && agent.remainingDistance <= catchDistance)
             {
-                // Al alcanzar la distancia de captura ejecuta la lógica de game over / muerte
                 TriggerGameOver();
                 agent.isStopped = true;
                 yield break;
@@ -284,16 +236,14 @@ public class WardenAI : MonoBehaviour
         Gizmos.DrawWireSphere(eyePos, viewDistance);
     }
 
-    void ApplyDayNightModifiers()
+    // Sobrescribimos el de EnemyBase para agregar nuestras propias modificaciones de noche
+    protected override void ApplyDayNightModifiers()
     {
+        base.ApplyDayNightModifiers();
+
         if (GameManager.Instance == null) return;
+        float darkness = 1f - GameManager.Instance.GetDayProgress01();
 
-        // 1 = dia, 0 = noche
-        float dayProgress = GameManager.Instance.GetDayProgress01();
-        float darkness = 1f - dayProgress;
-
-        // Interpolamos entre valor base (dia) y valor x multiplicador (noche)
-        patrolSpeed = Mathf.Lerp(basePatrolSpeed, basePatrolSpeed * nightSpeedMultiplier, darkness);
         chaseSpeed = Mathf.Lerp(baseChaseSpeed, baseChaseSpeed * nightSpeedMultiplier, darkness);
         viewDistance = Mathf.Lerp(baseViewDistance, baseViewDistance * nightViewDistanceMultiplier, darkness);
         viewAngle = Mathf.Lerp(baseViewAngle, baseViewAngle * nightViewAngleMultiplier, darkness);

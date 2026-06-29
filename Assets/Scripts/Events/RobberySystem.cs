@@ -1,9 +1,8 @@
 using UnityEngine;
+using AnteNoctem.Core;
 
-public class RobberySystem : MonoBehaviour
+public class RobberySystem : Singleton<RobberySystem>
 {
-        public static RobberySystem Instance { get; private set; }
-
     public enum DifficultyLevel { Easy, Medium, Hard }
 
     [System.Serializable]
@@ -24,12 +23,6 @@ public class RobberySystem : MonoBehaviour
 
     [Header("Debug")]
     public bool debugLogs = true;
-
-    void Awake()
-    {
-        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-        Instance = this;
-    }
 
         public int RollStealPoints()
     {
