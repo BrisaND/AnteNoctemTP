@@ -1,3 +1,5 @@
+// Malena Farias
+
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections.Generic;
@@ -6,8 +8,6 @@ using System.Collections;
 [RequireComponent(typeof(NavMeshAgent))]
 public class CitizenAI : MonoBehaviour
 {
-    // ===== ENUM =====
-    // Los enums son una forma limpia de listar opciones que una variable puede tomar.
     // En vez de usar numeros sueltos (0 = patrullando, 1 = deteniendo), usamos nombres.
     public enum CitizenState { Patrolling, Detaining }
 
@@ -21,16 +21,13 @@ public class CitizenAI : MonoBehaviour
     [Header("Debug")]
     public bool showGizmo = true;
 
-    // ===== GETTER/SETTER =====
     // Cualquiera puede leer el estado actual, pero solo este script puede cambiarlo
     public CitizenState currentState { get; private set; } = CitizenState.Patrolling;
 
-    // ===== ENCAPSULAMIENTO =====
     // Variables privadas que nadie de afuera puede modificar
     private float _detentionDuration = 4f;
     private float _interactDistance = 2.8f;
 
-    // ===== COMPOSICION =====
     // El ciudadano TIENE estos componentes adentro
     private NavMeshAgent agent;
     private Transform player;

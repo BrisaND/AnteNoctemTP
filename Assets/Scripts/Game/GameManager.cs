@@ -1,15 +1,14 @@
+//Juan Villarreo
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using AnteNoctem.Core;
 
-// ===== GENERICS + HERENCIA =====
-// Hereda de Singleton<GameManager>. Solo puede haber un GameManager en toda la escena
-// y se accede desde cualquier script con GameManager.Instance.
+//Solo puede haber un GameManager en toda la escena
 public class GameManager : Singleton<GameManager>
 {
-    // ===== ENUMS =====
     // Listamos los posibles estados del dia y del juego con nombres claros en vez de numeros sueltos
     public enum DayState { Dia, Tarde, Noche }
     public enum GameState { Playing, GameOver, Victory }
@@ -21,7 +20,7 @@ public class GameManager : Singleton<GameManager>
     [Header("Timer")]
     [Tooltip("Duracion total del nivel en segundos")]
     public float levelDuration = 180f;
-    // ===== GETTER/SETTER =====
+
     // Cualquiera puede leer currentTime, pero solo el GameManager puede modificarlo
     public float currentTime { get; private set; }
 
@@ -46,14 +45,11 @@ public class GameManager : Singleton<GameManager>
     [Range(0f, 1f)] public float tardeThreshold = 0.5f;
     [Range(0f, 1f)] public float nocheThreshold = 0.2f;
 
-    // ===== DELEGATES =====
-    // Estos delegates explicitos los declaramos en GameDelegates.cs.
     // Cuando algo importante pasa en el juego, los "invocamos" y todos los scripts que se suscribieron se enteran.
     public GameDelegates.DayStateChangedHandler OnDayStateChanged;
     public GameDelegates.ScoreChangedHandler OnScoreChanged;
 
-    // ===== EVENTS =====
-    // Action es un delegate predefinido de .NET. Lo usamos para avisar cuando cambia el estado del juego.
+    // Lo usamos para avisar cuando cambia el estado del juego.
     public System.Action<GameState> OnGameStateChanged;
 
     private bool hasNotifiedQuota = false;
@@ -128,7 +124,7 @@ public class GameManager : Singleton<GameManager>
     public void AddScore(int amount)
     {
         currentScore += amount;
-        // Invocamos el delegate: avisa a la UI y a quien este suscripto que cambio el puntaje
+        // avisa a la UI y a quien este suscripto que cambio el puntaje
         OnScoreChanged?.Invoke(currentScore, targetScore);
 
         // Si llego a la cuota minima, le avisamos al jugador

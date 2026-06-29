@@ -2,9 +2,7 @@ using UnityEngine;
 using AnteNoctem.Interactions;
 
 [RequireComponent(typeof(Collider))]
-// ===== INTERFACE =====
-// Tambien implementa la interface IInteractable: eso significa que cumple el "contrato"
-// que define IInteractable y debe tener los metodos GetPromptText, CanInteract e Interact.
+// Define IInteractable y debe tener los metodos GetPromptText, CanInteract e Interact.
 public class ChapuceroInteractable : MonoBehaviour, IInteractable
 {
     [Header("Interaccion")]

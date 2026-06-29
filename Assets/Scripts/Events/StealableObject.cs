@@ -25,7 +25,7 @@ public class StealableObject : MonoBehaviour, IInteractable
         if (col != null) col.isTrigger = true;
     }
 
-    // ===== IInteractable =====
+    // IInteractable
     public string GetPromptText() => "Apretá E para robar";
 
     public bool CanInteract()

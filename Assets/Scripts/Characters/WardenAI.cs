@@ -1,3 +1,5 @@
+// Brisa Decouches
+
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections.Generic;
@@ -5,13 +7,9 @@ using System.Collections;
 using AnteNoctem.Core;
 using AnteNoctem.Enemies;
 
-// ===== HERENCIA + CLASE ABSTRACTA =====
-// El Warden hereda de EnemyBase. Eso significa que automaticamente tiene patrolPoints,
-// el NavMeshAgent, el sistema de modificadores de noche, etc.
 // Acá solo agregamos lo unico del Warden: ver y oir al jugador, perseguirlo, buscarlo cuando lo pierde.
 public class WardenAI : EnemyBase
 {
-    // ===== ENUM =====
     public enum WardenState { Patrolling, Chasing, Searching }
 
     [Header("Captura")]
@@ -47,16 +45,13 @@ public class WardenAI : EnemyBase
     [Header("Debug")]
     public bool showVisionGizmo = true;
 
-    // ===== GETTER/SETTER =====
     public WardenState currentState { get; private set; } = WardenState.Patrolling;
     private float searchTimer = 0f;
     private Vector3 lastKnownPosition;
 
     private Coroutine approachCoroutine;
 
-    // ===== METODO VIRTUAL SOBRESCRITO =====
-    // El Start original esta en EnemyBase. Lo sobrescribimos con 'override' para agregar nuestra logica.
-    // 'base.Start()' llama al Start del padre asi no perdemos su comportamiento.
+    // El Start original esta en EnemyBase.
     protected override void Start()
     {
         base.Start();
@@ -79,8 +74,7 @@ public class WardenAI : EnemyBase
         }
     }
 
-    // ===== METODO ABSTRACTO IMPLEMENTADO =====
-    // EnemyBase nos obliga a implementar HandleBehavior. Aca definimos el comportamiento propio del Warden.
+    // EnemyBase obliga a implementar HandleBehavior. Aca definimos el comportamiento propio del Warden.
     protected override void HandleBehavior()
     {
         // Si el jugador esta escondido en un tacho, el Warden no lo ve ni oye

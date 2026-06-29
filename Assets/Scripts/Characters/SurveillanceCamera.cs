@@ -1,3 +1,5 @@
+// Joaquin Campana
+
 using UnityEngine;
 using AnteNoctem.Enemies;
 
@@ -45,7 +47,6 @@ public class SurveillanceCamera : MonoBehaviour
     private float detectionTimer = 0f;
     private float lastAlertTime = -999f;
 
-    // ===== GETTER/SETTER =====
     public bool IsDetecting { get; private set; } = false;
 
     void Start()

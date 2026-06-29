@@ -1,17 +1,12 @@
+// Joaquin Campana
+
 using UnityEngine;
 
-// ===== NAMESPACE =====
 namespace AnteNoctem.Core
 {
     
-    /// Los "metodos de extension" son una forma de agregarle funciones a clases que ya existen
-    /// (como Vector3 de Unity) sin tener que modificar la clase original.
-    /// Asi podemos hacer cosas como mi_vector.IsNearlyZero() en vez de IsNearlyZero(mi_vector).
-    /// Es una sintaxis mas natural y limpia.
-    
-    // ===== EXTENSIONS =====
     // 'static' porque los metodos de extension siempre van en clases estaticas.
-    // 'this Vector3' antes del parametro es la magia que convierte el metodo en una extension.
+    // 'this Vector3' antes del parametro convierte el metodo en una extension.
     public static class Vector3Extensions
     {
         // Distancia entre dos puntos ignorando la altura (Y)

@@ -1,3 +1,5 @@
+// Brisa Desouches
+
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
@@ -5,11 +7,9 @@ using System.Collections.Generic;
 using AnteNoctem.Core;
 using AnteNoctem.Enemies;
 
-// ===== HERENCIA + CLASE ABSTRACTA =====
-// Hereda de EnemyBase. Asi reutiliza el patrullaje, el NavMeshAgent, las referencias al jugador, etc.
+// Hereda de EnemyBase.
 public class GuardDogAI : EnemyBase
 {
-    // ===== ENUM =====
     public enum DogState { Patrolling, Tracking, Dragging }
 
     [Header("Olfato")]
@@ -98,7 +98,6 @@ public class GuardDogAI : EnemyBase
         HandleBehavior();
     }
 
-    // ===== METODO ABSTRACTO IMPLEMENTADO =====
     protected override void HandleBehavior()
     {
         switch (currentState)
@@ -236,7 +235,7 @@ public class GuardDogAI : EnemyBase
                     transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(dirToPlayer), Time.deltaTime * 5f);
                 }
 
-                // ===== USO DEL HELPER ESTATICO DE EnemyBase =====
+                // Helper de EnemyBase
                 Transform warden = EnemyBase.FindNearestWardenTransform(transform.position);
                 if (warden != null)
                 {
@@ -324,7 +323,7 @@ public class GuardDogAI : EnemyBase
             yield return null;
         }
 
-        isStunned = false;
+        isStunned = false;                                                      
 
         if (patrolPoints.Count > 0) GoToNextPatrolPoint();
     }
