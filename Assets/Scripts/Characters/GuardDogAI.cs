@@ -12,6 +12,18 @@ public class GuardDogAI : EnemyBase
 {
     public enum DogState { Patrolling, Tracking, Dragging }
 
+    [Header("Animaciones (Opción A - IDs del Asset)")]
+    [Tooltip("Referencia al componente Animator del perro")]
+    public Animator dogAnimator;
+    [SerializeField] private int idIdle = 0;
+    [SerializeField] private int idMovimiento = 2;
+    [SerializeField] private int idLadrar = 6;
+    [SerializeField] private int idArrastrar = 5;
+    [SerializeField] private int idAturdido = 1;
+
+    // Nombre exacto del parámetro que controla el estado en el asset
+    private readonly string PARAM_ANIMATION_ID = "AnimationID";
+
     [Header("Olfato")]
     [Tooltip("Distancia a la que detecta una marca")]
     public float scentRange = 8f;
@@ -64,12 +76,31 @@ public class GuardDogAI : EnemyBase
         baseScentRange = scentRange;
         baseTrackingSpeed = trackingSpeed;
         baseStunAfterEscape = stunAfterEscape;
+
+        if (dogAnimator == null) dogAnimator = GetComponentInChildren<Animator>();
     }
 
     protected override void Update()
     {
         base.Update();
         if (GameManager.Instance != null && GameManager.Instance.gameState != GameManager.GameState.Playing) return;
+
+        // --- CONTROL AUTOMÁTICO DE LOCOMOCIÓN (IDLE / MOVIMIENTO) ---
+        if (!isStunned && currentState != DogState.Dragging)
+        {
+            if (playerCtrl == null || !playerCtrl.isHidden)
+            {
+                // Si el perro se está trasladando por el NavMesh con velocidad real
+                if (agent != null && agent.velocity.sqrMagnitude > 0.1f)
+                {
+                    CambiarAnimacion(idMovimiento);
+                }
+                else
+                {
+                    CambiarAnimacion(idIdle);
+                }
+            }
+        }
 
         if (playerCtrl != null)
         {
@@ -118,7 +149,6 @@ public class GuardDogAI : EnemyBase
         }
     }
 
-    // Busca la marca de olor mas fuerte cerca y se mueve hacia ella
     void CheckForScent()
     {
         var markers = FindObjectsByType<ScentMarker>(FindObjectsSortMode.None);
@@ -227,6 +257,9 @@ public class GuardDogAI : EnemyBase
                 agent.isStopped = true;
                 agent.velocity = Vector3.zero;
 
+                // --- ANIMACIÓN: El perro te encontró escondido en el tacho y ladra ---
+                CambiarAnimacion(idLadrar);
+
                 // Rotamos al perro para que mire fijamente al tacho
                 Vector3 dirToPlayer = (player.position - transform.position).normalized;
                 dirToPlayer.y = 0;
@@ -279,6 +312,9 @@ public class GuardDogAI : EnemyBase
         {
             agent.SetDestination(target.position);
 
+            // --- ANIMACIÓN: El perro se desplaza arrastrando al jugador ---
+            CambiarAnimacion(idArrastrar);
+
             if (player != null)
             {
                 Vector3 offset = transform.forward * 1f;
@@ -319,11 +355,14 @@ public class GuardDogAI : EnemyBase
         float timer = 0f;
         while (timer < stunAfterEscape)
         {
+            // --- ANIMACIÓN: Forzamos la animación de Aturdido/Mareado ---
+            CambiarAnimacion(idAturdido);
+
             timer += Time.deltaTime;
             yield return null;
         }
 
-        isStunned = false;                                                      
+        isStunned = false;
 
         if (patrolPoints.Count > 0) GoToNextPatrolPoint();
     }
@@ -363,6 +402,10 @@ public class GuardDogAI : EnemyBase
         while (true)
         {
             agent.SetDestination(target.position);
+
+            // Mantenemos animación de arrastre activa si falló el minijuego
+            CambiarAnimacion(idArrastrar);
+
             if (player != null)
             {
                 Vector3 offset = transform.forward * 1f;
@@ -385,6 +428,14 @@ public class GuardDogAI : EnemyBase
             escapeMinigame.Cancel();
         }
         minigameActive = false;
+    }
+
+    private void CambiarAnimacion(int id)
+    {
+        if (dogAnimator != null)
+        {
+            dogAnimator.SetInteger(PARAM_ANIMATION_ID, id);
+        }
     }
 
     void OnDrawGizmos()

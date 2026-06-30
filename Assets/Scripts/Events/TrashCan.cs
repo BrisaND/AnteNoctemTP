@@ -37,13 +37,11 @@ public class TrashCan : MonoBehaviour, IInteractable
     [Header("Control del jugador")]
     public bool pausePlayerMovement = true;
 
-    bool playerInRange;
     GameObject currentPlayer;
     PlayerController currentPlayerController;
     List<Behaviour> disabledMovementComponents = new List<Behaviour>();
 
     bool interactionInProgress = false;
-    bool isPunishing = false;
 
     void Start()
     {
@@ -74,7 +72,6 @@ public class TrashCan : MonoBehaviour, IInteractable
     IEnumerator HandleSingleInteraction()
     {
         interactionInProgress = true;
-        isPunishing = false;
 
         if (Random.value < flowerChance)
         {
@@ -114,6 +111,7 @@ public class TrashCan : MonoBehaviour, IInteractable
             quickEventFlower.duration = tiempoSkillCheck;
             quickEventFlower.StartSkillCheck();
 
+            // Mantiene la tapa arriba forzada durante el SkillCheck
             while (!resultReceived)
             {
                 if (trashCanAnimator != null) trashCanAnimator.SetBool(animatorBoolParam, true);
@@ -127,21 +125,39 @@ public class TrashCan : MonoBehaviour, IInteractable
                 AwardStealPointsFromTrashCan();
                 CloseTrashCanAndHideFlower();
                 RestorePlayerMovement();
+
+                // Limpieza segura de referencias
+                currentPlayer = null;
+                currentPlayerController = null;
             }
             else
             {
-                isPunishing = true;
                 if (flowerAnimator != null) flowerAnimator.SetTrigger(flowerAttackTrigger);
-                yield return new WaitForSeconds(catchDuration);
-                isPunishing = false;
+
+                // Mantiene la tapa arriba forzada durante el castigo/ataque de la flor
+                float timer = 0f;
+                while (timer < catchDuration)
+                {
+                    timer += Time.deltaTime;
+                    if (trashCanAnimator != null) trashCanAnimator.SetBool(animatorBoolParam, true);
+                    yield return null;
+                }
+
                 RestorePlayerMovement();
                 CloseTrashCanAndHideFlower();
+
+                // Limpieza segura de referencias
+                currentPlayer = null;
+                currentPlayerController = null;
             }
         }
         else
         {
             AwardStealPointsFromTrashCan();
-            StartCoroutine(QuickOpenCloseAnimation());
+            yield return StartCoroutine(QuickOpenCloseAnimation());
+
+            currentPlayer = null;
+            currentPlayerController = null;
         }
 
         interactionInProgress = false;
@@ -164,7 +180,7 @@ public class TrashCan : MonoBehaviour, IInteractable
         if (trashCanAnimator != null)
         {
             trashCanAnimator.SetBool(animatorBoolParam, true);
-            yield return new WaitForSeconds(0.3f);
+            yield return new WaitForSeconds(0.4f);
             trashCanAnimator.SetBool(animatorBoolParam, false);
         }
     }
@@ -201,20 +217,6 @@ public class TrashCan : MonoBehaviour, IInteractable
     {
         if (RobberySystem.Instance != null) RobberySystem.Instance.AwardStealPoints("Robo en basurero");
         else if (GameManager.Instance != null) GameManager.Instance.AddScore(Random.Range(5, 16));
-    }
-
-    void OnTriggerExit(Collider other)
-    {
-        if (other.CompareTag(playerTag) || other.transform.root.CompareTag(playerTag))
-        {
-            if (interactionInProgress || isPunishing) return;
-
-            playerInRange = false;
-            RestorePlayerMovement();
-            CloseTrashCanAndHideFlower();
-            currentPlayer = null;
-            currentPlayerController = null;
-        }
     }
 
     void OnDisable()

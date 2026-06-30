@@ -11,12 +11,27 @@ public class CitizenAI : MonoBehaviour
     // En vez de usar numeros sueltos (0 = patrullando, 1 = deteniendo), usamos nombres.
     public enum CitizenState { Patrolling, Detaining }
 
+    [Header("Configuración de Animaciones (Nombres del Asset)")]
+    [Tooltip("Referencia al componente Animator del Ciudadano")]
+    public Animator citizenAnimator;
+    [Tooltip("Tiempo de transición entre estados de animación")]
+    public float transitionTime = 0.25f;
+    [SerializeField] private string animIdle = "MIRARSE";
+    [SerializeField] private string animCaminar = "WALKINGPONE";
+    [SerializeField] private string animSujetar = "SURPRISE";
+
     [Header("Configuración")]
     public bool randomizeDifficulty = true;
     public RobberySystem.DifficultyLevel difficulty = RobberySystem.DifficultyLevel.Easy;
 
     [Header("Patrullaje")]
     public List<Transform> patrolPoints = new List<Transform>();
+
+    [Header("Efectos Visuales")]
+    [Tooltip("Arrastrá acá el Prefab FX_RoboPesos que configuraste")]
+    public GameObject pesosParticlesPrefab;
+    [Tooltip("Punto de origen opcional (si se deja vacío, saldrán del centro del ciudadano)")]
+    public Transform particleSpawnPoint;
 
     [Header("Debug")]
     public bool showGizmo = true;
@@ -35,6 +50,9 @@ public class CitizenAI : MonoBehaviour
     private int currentPatrolIndex = 0;
 
     private WardenAI warden;
+
+    // Almacena la última animación reproducida para evitar reiniciar clips idénticos en cada frame
+    private string currentPlayingAnim = "";
 
     void Awake()
     {
@@ -59,6 +77,9 @@ public class CitizenAI : MonoBehaviour
             player = p.transform;
             playerCtrl = p.GetComponent<PlayerController>();
         }
+
+        if (citizenAnimator == null) citizenAnimator = GetComponentInChildren<Animator>();
+
         if (patrolPoints.Count > 0) GoToNextPatrolPoint();
     }
 
@@ -71,9 +92,39 @@ public class CitizenAI : MonoBehaviour
             case CitizenState.Patrolling:
                 Patrol();
                 CheckPlayerInteractionWhileMoving();
+                ControlarAnimacionMovimiento();
                 break;
             case CitizenState.Detaining:
+                // Forzamos la animación de forcejeo o sujeción mientras dura la corrutina
+                ReproducirAnimacion(animSujetar);
                 break;
+        }
+    }
+
+    // --- CONTROL DE ANIMACIÓN EN PATRULLA ---
+    private void ControlarAnimacionMovimiento()
+    {
+        if (citizenAnimator == null) return;
+
+        // Evaluamos la velocidad real en el NavMeshAgent para decidir si camina o se queda quieto
+        if (agent != null && agent.velocity.sqrMagnitude > 0.1f)
+        {
+            ReproducirAnimacion(animCaminar);
+        }
+        else
+        {
+            ReproducirAnimacion(animIdle);
+        }
+    }
+
+    private void ReproducirAnimacion(string nombreAnimacion)
+    {
+        if (currentPlayingAnim == nombreAnimacion) return;
+
+        if (citizenAnimator != null)
+        {
+            citizenAnimator.CrossFadeInFixedTime(nombreAnimacion, transitionTime);
+            currentPlayingAnim = nombreAnimacion;
         }
     }
 
@@ -127,6 +178,14 @@ public class CitizenAI : MonoBehaviour
             {
                 GameManager.Instance.AddScore(Random.Range(5, 16));
             }
+
+            //Ráfaga de partículas de dinero
+            if (pesosParticlesPrefab != null)
+            {
+                Vector3 spawnPos = particleSpawnPoint != null ? particleSpawnPoint.position : transform.position;
+                Instantiate(pesosParticlesPrefab, spawnPos, Quaternion.identity);
+            }
+
             if (currentState != CitizenState.Patrolling) ResumePatrol();
         }
         else

@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections; // Necesario para IEnumerator y las Corrutinas
 
 public class ExitZone : MonoBehaviour
 {
@@ -11,8 +12,10 @@ public class ExitZone : MonoBehaviour
 
     private bool isShowingWarning = false;
 
-    private void Start()
+    private void Awake()
     {
+        // Usamos Awake para asegurarnos de apagar el cartel en el frame 0 
+        // independientemente de cómo esté configurado en el Inspector.
         if (warningCanvasMessage != null) warningCanvasMessage.SetActive(false);
     }
 
@@ -25,10 +28,10 @@ public class ExitZone : MonoBehaviour
                 // ¿El jugador alcanzó o superó el puntaje objetivo?
                 if (GameManager.Instance.currentScore >= GameManager.Instance.targetScore)
                 {
-                    Debug.Log("¡Escape exitoso por la puerta con puntos de sobra!");
+                    Debug.Log("¡Escape exitoso por la puerta! Iniciando fundido a negro...");
 
-                    // LLAMAMOS AL NUEVO MÉTODO QUE SÍ CARGA LA ESCENA
-                    GameManager.Instance.CompleteLevelAndLoadVictory();
+                    // --- CAMBIO AQUÍ: Iniciamos la corrutina de escape con fade ---
+                    StartCoroutine(EscapeSequenceRoutine());
                 }
                 else
                 {
@@ -42,7 +45,28 @@ public class ExitZone : MonoBehaviour
         }
     }
 
-    private System.Collections.IEnumerator ShowWarningRoutine()
+    // --- NUEVA CORRUTINA DE SECUENCIA DE ESCAPE ---
+    private IEnumerator EscapeSequenceRoutine()
+    {
+        // 1. Buscamos si el ScreenFader existe en la escena actual
+        if (ScreenFader.Instance != null)
+        {
+            // Esperamos a que la corrutina del fader termine por completo (pantalla 100% negra)
+            yield return StartCoroutine(ScreenFader.Instance.FadeToBlackRoutine());
+        }
+        else
+        {
+            // Salvaguarda: Si te olvidaste de poner el ScreenFader en esta escena, 
+            // espera medio segundo para simular un tiempo de reacción y que no se rompa el juego.
+            Debug.LogWarning("No se encontró una instancia de ScreenFader en la escena.");
+            yield return new WaitForSeconds(0.5f);
+        }
+
+        // 2. Recién cuando terminó el fundido a negro, cargamos la escena definitiva mediante el GameManager
+        GameManager.Instance.CompleteLevelAndLoadVictory();
+    }
+
+    private IEnumerator ShowWarningRoutine()
     {
         isShowingWarning = true;
         warningCanvasMessage.SetActive(true);

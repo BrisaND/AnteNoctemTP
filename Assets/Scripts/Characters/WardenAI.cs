@@ -12,6 +12,16 @@ public class WardenAI : EnemyBase
 {
     public enum WardenState { Patrolling, Chasing, Searching }
 
+    [Header("Configuración de Animaciones (Nombres del Asset)")]
+    [Tooltip("Referencia al componente Animator del Warden")]
+    public Animator wardenAnimator;
+    [Tooltip("Tiempo de transición entre estados de animación")]
+    public float transitionTime = 0.25f;
+    [SerializeField] private string animIdle = "IDLE";
+    [SerializeField] private string animCaminar = "WALKING";
+    [SerializeField] private string animCorrer = "RUN";
+    [SerializeField] private string animBuscar = "MIRAR"; // Ajustalo al nombre real que tenga (ej. "Alert", "Idle")
+
     [Header("Captura")]
     public float catchDistance = 1.5f;
 
@@ -51,13 +61,17 @@ public class WardenAI : EnemyBase
 
     private Coroutine approachCoroutine;
 
-    // El Start original esta en EnemyBase.
+    // Almacena la última animación reproducida para evitar reiniciar clips idénticos en bucle
+    private string currentPlayingAnim = "";
+
     protected override void Start()
     {
         base.Start();
         baseChaseSpeed = chaseSpeed;
         baseViewDistance = viewDistance;
         baseViewAngle = viewAngle;
+
+        if (wardenAnimator == null) wardenAnimator = GetComponentInChildren<Animator>();
     }
 
     protected override void Update()
@@ -66,6 +80,7 @@ public class WardenAI : EnemyBase
         if (GameManager.Instance != null && GameManager.Instance.gameState != GameManager.GameState.Playing) return;
 
         HandleBehavior();
+        ControlarAnimacionesPorEstado();
 
         // Si el jugador esta a tiro y no esta escondido, lo atrapamos
         if (player != null && !playerCtrl.isHidden && Vector3.Distance(transform.position, player.position) < catchDistance)
@@ -74,10 +89,50 @@ public class WardenAI : EnemyBase
         }
     }
 
-    // EnemyBase obliga a implementar HandleBehavior. Aca definimos el comportamiento propio del Warden.
+    // --- CONTROL DE ANIMACIONES SEGÚN EL ESTADO ACTUAL Y VELOCIDAD ---
+    private void ControlarAnimacionesPorEstado()
+    {
+        if (wardenAnimator == null) return;
+
+        switch (currentState)
+        {
+            case WardenState.Patrolling:
+                // Evaluamos si el NavMeshAgent se está desplazando realmente
+                if (agent != null && agent.velocity.sqrMagnitude > 0.1f)
+                {
+                    ReproducirAnimacion(animCaminar);
+                }
+                else
+                {
+                    ReproducirAnimacion(animIdle);
+                }
+                break;
+
+            case WardenState.Chasing:
+                ReproducirAnimacion(animCorrer);
+                break;
+
+            case WardenState.Searching:
+                ReproducirAnimacion(animBuscar);
+                break;
+        }
+    }
+
+    private void ReproducirAnimacion(string nombreAnimacion)
+    {
+        // Evitamos recalcular la transición si ya está corriendo ese clip
+        if (currentPlayingAnim == nombreAnimacion) return;
+
+        if (wardenAnimator != null)
+        {
+            // Forzamos el fundido suavizado usando el sistema directo que lee los clips del asset
+            wardenAnimator.CrossFadeInFixedTime(nombreAnimacion, transitionTime);
+            currentPlayingAnim = nombreAnimacion;
+        }
+    }
+
     protected override void HandleBehavior()
     {
-        // Si el jugador esta escondido en un tacho, el Warden no lo ve ni oye
         bool sees = (playerCtrl != null && playerCtrl.isHidden) ? false : CanSeePlayer();
         bool hears = (playerCtrl != null && playerCtrl.isHidden) ? false : (canHear && CanHearPlayer());
 
@@ -148,7 +203,6 @@ public class WardenAI : EnemyBase
         }
     }
 
-    // Detecta si el jugador esta dentro del cono de vision y no hay obstaculos en el medio
     bool CanSeePlayer()
     {
         if (player == null) return false;
@@ -168,7 +222,6 @@ public class WardenAI : EnemyBase
         return true;
     }
 
-    // Detecta si el jugador esta haciendo ruido cerca
     bool CanHearPlayer()
     {
         if (player == null || playerCtrl == null) return false;
@@ -181,7 +234,6 @@ public class WardenAI : EnemyBase
         if (GameManager.Instance != null) GameManager.Instance.GameOver("Te atrapo un Warden");
     }
 
-    // Permite que otras cosas (camara, ciudadano) le avisen al warden donde esta el jugador
     public void AlertToPosition(Vector3 pos)
     {
         lastKnownPosition = pos;
@@ -230,7 +282,6 @@ public class WardenAI : EnemyBase
         Gizmos.DrawWireSphere(eyePos, viewDistance);
     }
 
-    // Sobrescribimos el de EnemyBase para agregar nuestras propias modificaciones de noche
     protected override void ApplyDayNightModifiers()
     {
         base.ApplyDayNightModifiers();

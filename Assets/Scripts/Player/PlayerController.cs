@@ -130,19 +130,37 @@ public class PlayerController : MonoBehaviour
     {
         if (animator == null) return;
 
-       bool isMoving = !moveInput.IsNearlyZero();
+        // 1. Detectamos si el jugador realmente se está moviendo usando el input
+        bool tieneInputMovimiento = !moveInput.IsNearlyZero();
+        bool presionaShift = Input.GetKey(KeyCode.LeftShift);
 
-        animator.SetBool("isWalking", isMoving && !isCrouching && !Input.GetKey(KeyCode.LeftShift));
-        animator.SetBool("isRunning", isMoving && !isCrouching && Input.GetKey(KeyCode.LeftShift));
-        animator.SetBool("isCrouching", isCrouching);
+        // 2. CASO ESPECIAL SPRINT INTERRUMPIDO: 
+        // Si está agachado internamente pero quiere correr, forzamos los estados del Animator
+        if (tieneInputMovimiento && isCrouching && presionaShift)
+        {
+            animator.SetBool("isCrouching", false);
+            animator.SetBool("isWalking", false);
+            animator.SetBool("isRunning", true);
+        }
+        else
+        {
+            // 3. COMPORTAMIENTO NORMAL BASADO EN ESTADOS:
+            // isCrouching en el Animator sigue fielmente a la variable del script
+            animator.SetBool("isCrouching", isCrouching);
 
+            // isWalking tiene que ser TRUE siempre que haya input de movimiento Y no se esté corriendo
+            animator.SetBool("isWalking", tieneInputMovimiento && !presionaShift);
+
+            // isRunning solo es TRUE si se mueve de pie y presiona Shift
+            animator.SetBool("isRunning", tieneInputMovimiento && !isCrouching && presionaShift);
+        }
+
+        // Control de velocidad de la animación (Power-ups)
         float velocidadAnimacion = 1f;
-
         if (speedMultiplier < 1f)
         {
             velocidadAnimacion = speedMultiplier;
         }
-
         animator.SetFloat("Speed", velocidadAnimacion);
     }
 
