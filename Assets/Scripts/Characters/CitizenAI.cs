@@ -69,6 +69,8 @@ public class CitizenAI : MonoBehaviour
             if (roll < 0.6f) difficulty = RobberySystem.DifficultyLevel.Easy;
             else if (roll < 0.9f) difficulty = RobberySystem.DifficultyLevel.Medium;
             else difficulty = RobberySystem.DifficultyLevel.Hard;
+
+            Debug.Log($"Citizen {gameObject.name} | roll={roll} | dificultad={difficulty}");
         }
 
         var p = GameObject.FindGameObjectWithTag("Player");
