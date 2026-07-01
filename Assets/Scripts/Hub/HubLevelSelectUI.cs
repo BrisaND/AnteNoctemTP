@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.SceneManagement;
 using TMPro;
 
 public class HubLevelSelectUI : MonoBehaviour
@@ -114,8 +113,8 @@ public class HubLevelSelectUI : MonoBehaviour
     {
         if (pendingZone == null || string.IsNullOrEmpty(pendingZone.sceneName)) return;
 
-        Time.timeScale = 1f; 
-        SceneManager.LoadScene(pendingZone.sceneName);
+        Time.timeScale = 1f;
+        LoadingScreen.LoadingScreenAsync(pendingZone.sceneName);
     }
 
     void OnConfirmNo()

@@ -1,4 +1,3 @@
-using UnityEngine.SceneManagement;
 using UnityEngine;
 using AnteNoctem.Core;
 
@@ -92,6 +91,6 @@ public class PauseManager : Singleton<PauseManager>
     public void LoadMainMenu()
     {
         Time.timeScale = 1f;
-        SceneManager.LoadScene("Menu");
+        LoadingScreen.LoadingScreenAsync("Menu");
     }
 }
