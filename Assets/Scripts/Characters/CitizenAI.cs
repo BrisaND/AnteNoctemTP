@@ -200,7 +200,6 @@ public class CitizenAI : MonoBehaviour
     {
         currentState = CitizenState.Detaining;
 
-        // Avisar al warden para que se acerque
         if (warden != null && player != null)
         {
             warden.AlertToPosition(player.position);
@@ -212,17 +211,39 @@ public class CitizenAI : MonoBehaviour
 
         if (playerCtrl != null) playerCtrl.SetControlsEnabled(false);
 
-        // Mantener al jugador agarrado por X segundos
-        Vector3 holdOffset = transform.forward * 0.8f;
+        // Guardamos la altura Y original del jugador (la del piso)
+        float playerGroundY = player != null ? player.position.y : 0f;
+
+        // Congelamos temporalmente el Rigidbody del jugador para que no forcejee con nuestro movimiento manual
+        Rigidbody playerRb = player != null ? player.GetComponent<Rigidbody>() : null;
+        bool wasKinematic = false;
+        if (playerRb != null)
+        {
+            wasKinematic = playerRb.isKinematic;
+            playerRb.linearVelocity = Vector3.zero;
+            playerRb.angularVelocity = Vector3.zero;
+            playerRb.isKinematic = true;
+        }
+
+        // Mantener al jugador agarrado por X segundos, siempre a la altura del piso
+        Vector3 holdOffsetXZ = transform.forward * 0.8f;
         float timer = 0f;
         while (timer < _detentionDuration)
         {
             timer += Time.deltaTime;
             if (player != null)
             {
-                player.position = transform.position + holdOffset;
+                Vector3 targetPos = transform.position + holdOffsetXZ;
+                targetPos.y = playerGroundY; // Forzamos que se mantenga a nivel del piso
+                player.position = targetPos;
             }
             yield return null;
+        }
+
+        // Restauramos el Rigidbody para que vuelva a caer con gravedad
+        if (playerRb != null)
+        {
+            playerRb.isKinematic = wasKinematic;
         }
 
         if (playerCtrl != null) playerCtrl.SetControlsEnabled(true);

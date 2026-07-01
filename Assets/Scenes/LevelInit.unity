@@ -948,9 +948,6 @@ PrefabInstance:
       addedObject: {fileID: 605616235}
     - targetCorrespondingSourceObject: {fileID: 100016, guid: ddf397bb8ce11384bbc6d7b61581bbc6, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 605616240}
-    - targetCorrespondingSourceObject: {fileID: 100016, guid: ddf397bb8ce11384bbc6d7b61581bbc6, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 605616241}
     - targetCorrespondingSourceObject: {fileID: 100016, guid: ddf397bb8ce11384bbc6d7b61581bbc6, type: 3}
       insertIndex: -1
@@ -12461,10 +12458,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2653bfd4666520d40a2992935e452003, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  walkSpacing: 1.5
-  runSpacing: 0.8
-  crouchSpacing: 3
-  markerLifetime: 8
+  walkSpacing: 6
+  runSpacing: 3
+  crouchSpacing: 9
+  markerLifetime: 6
   showMarkers: 0
 --- !u!114 &605616231
 MonoBehaviour:
@@ -12633,28 +12630,6 @@ Animator:
   m_CorrespondingSourceObject: {fileID: 9500000, guid: ddf397bb8ce11384bbc6d7b61581bbc6, type: 3}
   m_PrefabInstance: {fileID: 21671229}
   m_PrefabAsset: {fileID: 0}
---- !u!195 &605616240
-NavMeshAgent:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 605616220}
-  m_Enabled: 1
-  m_AgentTypeID: 0
-  m_Radius: 0.47
-  m_Speed: 3.5
-  m_Acceleration: 8
-  avoidancePriority: 50
-  m_AngularSpeed: 120
-  m_StoppingDistance: 0
-  m_AutoTraverseOffMeshLink: 1
-  m_AutoBraking: 1
-  m_AutoRepath: 1
-  m_Height: 2.63
-  m_BaseOffset: 0.14
-  m_WalkableMask: 4294967295
-  m_ObstacleAvoidanceType: 4
 --- !u!82 &605616241
 AudioSource:
   m_ObjectHideFlags: 0
