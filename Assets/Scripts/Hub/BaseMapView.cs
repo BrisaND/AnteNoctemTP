@@ -50,26 +50,25 @@ public class BaseMapView : MonoBehaviour
 
         if (cachedPlayer != null) cachedPlayer.enabled = false;
 
-       
         StartCoroutine(ExecuteOpenTransition());
     }
 
     IEnumerator ExecuteOpenTransition()
     {
-        
         mapCamera.gameObject.SetActive(true);
 
-        
         yield return new WaitForEndOfFrame();
 
-       
         if (playerCamera != null)
             playerCamera.enabled = false;
 
         if (playerVisual != null) playerVisual.SetActive(false);
         if (mapUIPanel != null) mapUIPanel.SetActive(true);
-        if (levelSelectUI != null) levelSelectUI.OnMapOpened(mapUIPanel);
+        
+        
+        if (levelSelectUI != null) levelSelectUI.OnMapOpened();
 
+        // Aseguramos liberar el mouse para interactuar con los botones del mapa
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
@@ -86,17 +85,16 @@ public class BaseMapView : MonoBehaviour
 
     IEnumerator ExecuteCloseTransition()
     {
-        
         if (playerCamera != null) playerCamera.enabled = true;
         if (playerVisual != null) playerVisual.SetActive(true);
 
-       
         if (mapCamera != null)
             mapCamera.gameObject.SetActive(false);
 
         if (cachedPlayer != null) cachedPlayer.enabled = true;
         if (mapUIPanel != null) mapUIPanel.SetActive(false);
 
+        // Volvemos a bloquear el mouse para el gameplay de sigilo/movimiento
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
         

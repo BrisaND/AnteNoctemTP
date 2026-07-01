@@ -12,18 +12,12 @@ public class HubLevelSelectUI : MonoBehaviour
         public string displayName;
         public string sceneName;
         public bool unlockedAtStart;
+        [Tooltip("Arrastrá acá el botón físico que pusiste en el mapa para este nivel.")]
+        public Button levelButton; 
     }
-
 
     [Header("Zonas del Mapa")]
     public List<HubZoneEntry> zones = new List<HubZoneEntry>();
-
-    [Header("Referencias de UI (Asignar en Inspector)")]
-    [Tooltip("El objeto hijo del Panel donde se van a alinear los botones de los niveles.")]
-    public RectTransform levelListContainer;
-
-    [Tooltip("El prefab o GameObject del botón base que vamos a clonar.")]
-    public Button buttonPrefab;
 
     [Header("Popup de Confirmación (Asignar en Inspector)")]
     public GameObject confirmationPanel;
@@ -31,13 +25,10 @@ public class HubLevelSelectUI : MonoBehaviour
     public Button confirmYesButton;
     public Button confirmNoButton;
 
-    private readonly List<Button> spawnedButtons = new List<Button>();
     private HubZoneEntry pendingZone;
 
     void Awake()
     {
-        EnsureDefaultZones();
-
         // Enlazar eventos de los botones de confirmación
         if (confirmYesButton != null)
             confirmYesButton.onClick.AddListener(OnConfirmYes);
@@ -47,29 +38,16 @@ public class HubLevelSelectUI : MonoBehaviour
         HideConfirmation();
     }
 
-    void EnsureDefaultZones()
+    void Start()
     {
-        if (zones != null && zones.Count > 0) return;
-
-        // Datos por defecto si te olvidás de rellenar la lista en el Inspector
-        zones = new List<HubZoneEntry>
-        {
-            new HubZoneEntry { displayName = "Pueblo", sceneName = "LevelInit", unlockedAtStart = true },
-            new HubZoneEntry { displayName = "Distrito Alto", sceneName = "", unlockedAtStart = false },
-            new HubZoneEntry { displayName = "Zona de Infiltración", sceneName = "", unlockedAtStart = false },
-        };
-    }
-
-    public bool IsZoneUnlocked(HubZoneEntry zone)
-    {
-        if (zone == null) return false;
-        return zone.unlockedAtStart;
+        // Configuramos los botones una sola vez al iniciar el juego
+        SetupMapButtons();
     }
 
     // Se ejecuta automáticamente al abrir la terminal interactiva del mapa
-    public void OnMapOpened(GameObject mapUIPanel)
+    public void OnMapOpened()
     {
-        BuildLevelButtons();
+        SetupMapButtons();
         HideConfirmation();
     }
 
@@ -78,40 +56,46 @@ public class HubLevelSelectUI : MonoBehaviour
         HideConfirmation();
     }
 
-    void BuildLevelButtons()
+    void SetupMapButtons()
     {
-        ClearButtons();
-        if (levelListContainer == null || buttonPrefab == null) return;
-
         foreach (var zone in zones)
         {
+            if (zone.levelButton == null) continue;
+
             bool unlocked = IsZoneUnlocked(zone);
             bool canTravel = unlocked && !string.IsNullOrEmpty(zone.sceneName);
 
-            // Clonamos el botón de diseño que hizo la diseñadora
-            Button btnInstance = Instantiate(buttonPrefab, levelListContainer);
-            btnInstance.gameObject.name = "Btn_" + zone.displayName;
-            Image img = btnInstance.GetComponent<Image>();
-            Button btn = btnInstance;
+            // Configuramos la interactividad del botón de Unity
+            zone.levelButton.interactable = canTravel;
 
-            // Buscamos el texto del botón clonado para cambiarle el nombre
-            TMP_Text btnText = btnInstance.GetComponentInChildren<TMP_Text>();
+            // Buscamos el texto para actualizarlo si es necesario
+            TMP_Text btnText = zone.levelButton.GetComponentInChildren<TMP_Text>();
             if (btnText != null)
             {
                 btnText.text = canTravel ? zone.displayName : zone.displayName + " (Bloqueado)";
             }
 
-            // Configuramos si el botón se puede cliquear o no
-            btnInstance.interactable = canTravel;
-
+            // Limpiamos listeners viejos para que no se acumulen y asignamos el evento
+            zone.levelButton.onClick.RemoveAllListeners();
             if (canTravel)
             {
                 HubZoneEntry captured = zone;
-                btnInstance.onClick.AddListener(() => OnZoneClicked(captured));
+                zone.levelButton.onClick.AddListener(() => OnZoneClicked(captured));
             }
 
-            spawnedButtons.Add(btnInstance);
+            // Avisamos al componente de efectos si está desbloqueado o no
+            LevelButtonEffects effects = zone.levelButton.GetComponent<LevelButtonEffects>();
+            if (effects != null)
+            {
+                effects.SetUnlocked(unlocked);
+            }
         }
+    }
+
+    public bool IsZoneUnlocked(HubZoneEntry zone)
+    {
+        if (zone == null) return false;
+        return zone.unlockedAtStart;
     }
 
     void OnZoneClicked(HubZoneEntry zone)
@@ -130,7 +114,7 @@ public class HubLevelSelectUI : MonoBehaviour
     {
         if (pendingZone == null || string.IsNullOrEmpty(pendingZone.sceneName)) return;
 
-        Time.timeScale = 1f; // Asegura que el juego no quede pausado en la otra escena
+        Time.timeScale = 1f; 
         SceneManager.LoadScene(pendingZone.sceneName);
     }
 
@@ -144,15 +128,5 @@ public class HubLevelSelectUI : MonoBehaviour
         pendingZone = null;
         if (confirmationPanel != null)
             confirmationPanel.SetActive(false);
-    }
-
-    void ClearButtons()
-    {
-        foreach (var btn in spawnedButtons)
-        {
-            if (btn != null)
-                Destroy(btn.gameObject);
-        }
-        spawnedButtons.Clear();
     }
 }
