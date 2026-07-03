@@ -32,6 +32,8 @@ public class GuardDogAI : EnemyBase
     public float trackingSpeed = 4f;
 
     [Header("Captura")]
+    [Tooltip("Punto exacto (objeto vacío hijo del perro) donde se acoplará el jugador")]
+    public Transform biteAnchor;
     [Tooltip("Distancia a la que el perro te muerde")]
     public float biteDistance = 1.2f;
     [Tooltip("Velocidad de arrastre hacia el Warden")]
@@ -40,8 +42,6 @@ public class GuardDogAI : EnemyBase
     [Header("Minijuego")]
     [Tooltip("Cantidad de pulsaciones para zafarse")]
     public int requiredPresses = 15;
-    [Tooltip("Tiempo limite para zafarse")]
-    public float minigameDuration = 4f;
     [Tooltip("Referencia al EventFlower para el minijuego")]
     public EventFlower escapeMinigame;
 
@@ -49,7 +49,15 @@ public class GuardDogAI : EnemyBase
     [Tooltip("Segundos que el perro queda aturdido despues de que zafes")]
     public float stunAfterEscape = 3f;
     [Tooltip("Distancia que el perro retrocede al ser zafado")]
-    public float knockbackDistance = 2f;
+    public float knockbackDistance = 2.5f;
+
+    [Header("Audio del Perro")]
+    [Tooltip("El AudioSource que reproducirá los sonidos del perro.")]
+    public AudioSource audioSource;
+    [Tooltip("Ladridos rápidos en bucle para cuando persigue al jugador.")]
+    public AudioClip barkTrackingSound;
+    [Tooltip("Gruñido agresivo continuo para cuando te muerde y te arrastra.")]
+    public AudioClip growlDraggingSound;
 
     [Header("Modificadores de Noche")]
     public float nightScentRangeMultiplier = 1.8f;
@@ -78,6 +86,24 @@ public class GuardDogAI : EnemyBase
         baseStunAfterEscape = stunAfterEscape;
 
         if (dogAnimator == null) dogAnimator = GetComponentInChildren<Animator>();
+
+        // Configuración automática del AudioSource si falta asignarlo
+        if (audioSource == null)
+        {
+            audioSource = GetComponent<AudioSource>();
+            if (audioSource == null)
+            {
+                audioSource = gameObject.AddComponent<AudioSource>();
+                audioSource.playOnAwake = false;
+                audioSource.spatialBlend = 1f; // Audio 3D posicional
+            }
+        }
+
+        // Suscribirse al evento de la flor si está asignada
+        if (escapeMinigame != null)
+        {
+            escapeMinigame.OnSkillCheckResult.AddListener(OnMinigameResult);
+        }
     }
 
     protected override void Update()
@@ -90,7 +116,6 @@ public class GuardDogAI : EnemyBase
         {
             if (playerCtrl == null || !playerCtrl.isHidden)
             {
-                // Si el perro se está trasladando por el NavMesh con velocidad real
                 if (agent != null && agent.velocity.sqrMagnitude > 0.1f)
                 {
                     CambiarAnimacion(idMovimiento);
@@ -104,13 +129,12 @@ public class GuardDogAI : EnemyBase
 
         if (playerCtrl != null)
         {
-            // Si el jugador salio de un escondite, decidimos si lo perseguimos o volvemos a patrullar
             if (wasPlayerHidden && !playerCtrl.isHidden)
             {
                 if (agent != null) agent.isStopped = false;
                 if (Vector3.Distance(transform.position, player.position) <= scentRange)
                 {
-                    currentState = DogState.Tracking;
+                    CambiarEstado(DogState.Tracking);
                 }
                 else
                 {
@@ -172,7 +196,7 @@ public class GuardDogAI : EnemyBase
         if (best != null)
         {
             currentTarget = best;
-            currentState = DogState.Tracking;
+            CambiarEstado(DogState.Tracking);
         }
     }
 
@@ -217,7 +241,7 @@ public class GuardDogAI : EnemyBase
     void ReturnToPatrol()
     {
         currentTarget = null;
-        currentState = DogState.Patrolling;
+        CambiarEstado(DogState.Patrolling);
         if (patrolPoints.Count > 0) GoToNextPatrolPoint();
     }
 
@@ -225,8 +249,6 @@ public class GuardDogAI : EnemyBase
     {
         if (player == null) return;
         if (isStunned) return;
-
-        // Si el jugador esta escondido, el perro no puede morderlo
         if (playerCtrl != null && playerCtrl.isHidden) return;
 
         if (Vector3.Distance(transform.position, player.position) < biteDistance)
@@ -245,7 +267,6 @@ public class GuardDogAI : EnemyBase
             {
                 bool esTachoVulnerable = playerCtrl.currentHidingSpot != null && playerCtrl.currentHidingSpot.isVulnerableToDog;
 
-                // Si el tacho es de los tirados y el perro viene persiguiendo, lo agarra sin minijuego
                 if (esTachoVulnerable && currentState == DogState.Tracking)
                 {
                     Debug.Log("El perro se mete al tacho tirado a sacarte.");
@@ -257,10 +278,15 @@ public class GuardDogAI : EnemyBase
                 agent.isStopped = true;
                 agent.velocity = Vector3.zero;
 
-                // --- ANIMACIÓN: El perro te encontró escondido en el tacho y ladra ---
                 CambiarAnimacion(idLadrar);
 
-                // Rotamos al perro para que mire fijamente al tacho
+                if (audioSource != null && barkTrackingSound != null && audioSource.clip != barkTrackingSound)
+                {
+                    audioSource.clip = barkTrackingSound;
+                    audioSource.loop = true;
+                    audioSource.Play();
+                }
+
                 Vector3 dirToPlayer = (player.position - transform.position).normalized;
                 dirToPlayer.y = 0;
                 if (dirToPlayer != Vector3.zero)
@@ -268,7 +294,6 @@ public class GuardDogAI : EnemyBase
                     transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(dirToPlayer), Time.deltaTime * 5f);
                 }
 
-                // Helper de EnemyBase
                 Transform warden = EnemyBase.FindNearestWardenTransform(transform.position);
                 if (warden != null)
                 {
@@ -290,7 +315,52 @@ public class GuardDogAI : EnemyBase
 
     void StartDragging()
     {
-        currentState = DogState.Dragging;
+        if (isStunned) return;
+        CambiarEstado(DogState.Dragging);
+
+        // Desactivar colisiones mutuas inmediatamente al iniciar el arrastre
+        Collider dogCollider = GetComponent<Collider>();
+        if (player != null)
+        {
+            Collider playerCollider = player.GetComponent<Collider>();
+            if (dogCollider != null && playerCollider != null)
+            {
+                Physics.IgnoreCollision(dogCollider, playerCollider, true);
+            }
+
+            // Desactivamos el CharacterController para que no pelee con el movimiento del perro
+            var controller = player.GetComponent<CharacterController>();
+            if (controller != null) controller.enabled = false;
+
+            // Respaldo preventivo si te olvidás de asignar el ancla en el inspector
+            if (biteAnchor == null)
+            {
+                GameObject backupAnchor = new GameObject("BiteAnchor_Backup");
+                backupAnchor.transform.SetParent(transform);
+                backupAnchor.transform.localPosition = new Vector3(0f, 0.2f, 1.1f);
+                biteAnchor = backupAnchor.transform;
+            }
+
+            // Emparentamos el jugador al ancla para que se mueva solidario al perro
+            player.SetParent(biteAnchor);
+            player.localPosition = Vector3.zero;
+            player.localRotation = Quaternion.identity;
+        }
+
+        // Configurar e iniciar minijuego sin tiempo (infinito) en EventFlower
+        if (escapeMinigame != null)
+        {
+            escapeMinigame.useTimeLimit = false;
+            escapeMinigame.requiredPresses = requiredPresses;
+            escapeMinigame.StartSkillCheck();
+            minigameActive = true;
+        }
+        else
+        {
+            Debug.LogWarning("GuardDog: no hay EventFlower asignado para el minijuego");
+            minigameActive = true;
+        }
+
         StartCoroutine(DragPlayerCoroutine());
     }
 
@@ -304,130 +374,127 @@ public class GuardDogAI : EnemyBase
         var warden = target.GetComponent<WardenAI>();
         if (warden != null) warden.AlertToPosition(transform.position);
 
-        StartEscapeMinigame();
-
         agent.speed = dragSpeed;
 
         while (minigameActive)
         {
             agent.SetDestination(target.position);
-
-            // --- ANIMACIÓN: El perro se desplaza arrastrando al jugador ---
             CambiarAnimacion(idArrastrar);
 
-            if (player != null)
+            // Forzado frame a frame en el transform del ancla para evitar tirones visuales
+            if (player != null && biteAnchor != null)
             {
-                Vector3 offset = transform.forward * 1f;
-                player.position = transform.position + offset;
+                player.position = biteAnchor.position;
+                player.rotation = biteAnchor.rotation;
             }
 
             if (Vector3.Distance(transform.position, target.position) < 1.5f)
             {
-                EndMinigameForceFail();
+                minigameActive = false;
+                if (escapeMinigame != null) escapeMinigame.Cancel();
+
+                if (audioSource != null) audioSource.Stop();
+                if (player != null) player.SetParent(null); // Despegamos al jugador del perro antes del GameOver
+
                 if (GameManager.Instance != null) GameManager.Instance.GameOver("El perro te llevo al Warden");
                 yield break;
             }
 
             yield return null;
         }
+    }
 
-        // El jugador zafo del minijuego
-        if (playerCtrl != null) playerCtrl.SetControlsEnabled(true);
-        StartCoroutine(StunAndKnockback());
+    void OnMinigameResult(bool success)
+    {
+        // Si el minijuego termina con éxito y estábamos siendo arrastrados, nos liberamos
+        if (success && minigameActive)
+        {
+            minigameActive = false;
+            if (playerCtrl != null) playerCtrl.SetControlsEnabled(true);
+            StartCoroutine(StunAndKnockback());
+        }
     }
 
     IEnumerator StunAndKnockback()
     {
         isStunned = true;
+        if (audioSource != null) audioSource.Stop();
 
-        // El perro retrocede unos pasos
+        if (player != null)
+        {
+            player.SetParent(null); // <-- suelta al jugador de la jerarquía del perro
+            var controller = player.GetComponent<CharacterController>();
+            if (controller != null) controller.enabled = true; // <-- le devuelve el control físico
+        }
+
+        // El perro retrocede firmemente unos pasos hacia atrás
         Vector3 knockbackDir = -transform.forward;
         Vector3 destination = transform.position + knockbackDir * knockbackDistance;
 
+        // Corregido el out NavMeshHit sin usings inválidos
         if (NavMesh.SamplePosition(destination, out NavMeshHit hit, knockbackDistance, NavMesh.AllAreas))
         {
             agent.SetDestination(hit.position);
         }
 
-        currentState = DogState.Patrolling;
+        yield return new WaitForFixedUpdate();
 
-        // Aturdido X segundos: no muerde, no rastrea
+        // Reactivar colisiones ahora que están separados de forma segura
+        Collider dogCollider = GetComponent<Collider>();
+        if (player != null)
+        {
+            Collider playerCollider = player.GetComponent<Collider>();
+            if (dogCollider != null && playerCollider != null)
+            {
+                Physics.IgnoreCollision(dogCollider, playerCollider, false);
+            }
+        }
+
+        CambiarEstado(DogState.Patrolling);
+
         float timer = 0f;
         while (timer < stunAfterEscape)
         {
-            // --- ANIMACIÓN: Forzamos la animación de Aturdido/Mareado ---
             CambiarAnimacion(idAturdido);
-
             timer += Time.deltaTime;
             yield return null;
         }
 
         isStunned = false;
-
         if (patrolPoints.Count > 0) GoToNextPatrolPoint();
     }
 
-    void StartEscapeMinigame()
+    private void CambiarEstado(DogState nuevoEstado)
     {
-        if (escapeMinigame == null)
+        if (currentState == nuevoEstado) return;
+        currentState = nuevoEstado;
+
+        if (audioSource == null) return;
+
+        switch (currentState)
         {
-            Debug.LogWarning("GuardDog: no hay EventFlower asignado para el minijuego");
-            minigameActive = true;
-            return;
+            case DogState.Patrolling:
+                audioSource.Stop();
+                break;
+
+            case DogState.Tracking:
+                if (barkTrackingSound != null)
+                {
+                    audioSource.clip = barkTrackingSound;
+                    audioSource.loop = true;
+                    audioSource.Play();
+                }
+                break;
+
+            case DogState.Dragging:
+                if (growlDraggingSound != null)
+                {
+                    audioSource.clip = growlDraggingSound;
+                    audioSource.loop = true;
+                    audioSource.Play();
+                }
+                break;
         }
-
-        escapeMinigame.requiredPresses = requiredPresses;
-        escapeMinigame.duration = minigameDuration;
-        escapeMinigame.OnSkillCheckResult.AddListener(OnMinigameResult);
-        escapeMinigame.StartSkillCheck();
-        minigameActive = true;
-    }
-
-    void OnMinigameResult(bool success)
-    {
-        escapeMinigame.OnSkillCheckResult.RemoveListener(OnMinigameResult);
-        minigameActive = false;
-
-        if (!success)
-        {
-            StartCoroutine(KeepDragging());
-        }
-    }
-
-    IEnumerator KeepDragging()
-    {
-        Transform target = EnemyBase.FindNearestWardenTransform(transform.position);
-        if (target == null) target = transform;
-
-        while (true)
-        {
-            agent.SetDestination(target.position);
-
-            // Mantenemos animación de arrastre activa si falló el minijuego
-            CambiarAnimacion(idArrastrar);
-
-            if (player != null)
-            {
-                Vector3 offset = transform.forward * 1f;
-                player.position = transform.position + offset;
-            }
-
-            if (Vector3.Distance(transform.position, target.position) < 1.5f)
-            {
-                if (GameManager.Instance != null) GameManager.Instance.GameOver("El perro te llevo al Warden");
-                yield break;
-            }
-            yield return null;
-        }
-    }
-
-    void EndMinigameForceFail()
-    {
-        if (escapeMinigame != null && escapeMinigame.IsActive)
-        {
-            escapeMinigame.Cancel();
-        }
-        minigameActive = false;
     }
 
     private void CambiarAnimacion(int id)

@@ -4,5 +4,5 @@ using UnityEngine;
 
 public interface ISoundFloor 
 {
-    AudioClip GetClip();
+    AudioClip GetClip(bool isRunning);
 }

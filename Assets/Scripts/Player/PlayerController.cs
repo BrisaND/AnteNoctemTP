@@ -58,9 +58,12 @@ public class PlayerController : MonoBehaviour
     [Header("Audio")]
     public AudioSource audioSource;
     public AudioClip defaultSound;
-    public AudioClip walkSound;
+    private AudioClip currentFloorClip;
 
     public LayerMask maskFloor;
+
+    private RaycastHit _lastFloor;
+    private bool _lastStateWasRunning;
 
     void Awake()
     {
@@ -69,7 +72,9 @@ public class PlayerController : MonoBehaviour
         if (playerCollider == null) playerCollider = GetComponent<CapsuleCollider>();
         if (animator == null) animator = GetComponent<Animator>();
         mainCam = Camera.main;
-        walkSound = defaultSound;
+
+        currentFloorClip = defaultSound;
+
         if (mainCam != null)
         {
             camaraJugador = mainCam.GetComponent<ShoulderCamera>();
@@ -82,7 +87,6 @@ public class PlayerController : MonoBehaviour
 
         if (mainCam != null)
         {
-            // Guardamos la posición y rotación de la cámara RELATIVAS al jugador
             camLocalOffset = transform.InverseTransformPoint(mainCam.transform.position);
             camLocalRotationOffset = Quaternion.Inverse(transform.rotation) * mainCam.transform.rotation;
         }
@@ -105,24 +109,37 @@ public class PlayerController : MonoBehaviour
         UpdateAnimations();
         UpdateSoundWalk();
     }
-    RaycastHit _lastFloor;
+
     void UpdateSoundWalk()
     {
-        if (Physics.Raycast(transform.position, -Vector2.up, out RaycastHit hit, 20f, maskFloor))
+        bool runningActual = (currentState == MoveState.Running);
+
+        // Cambiamos -Vector2.up por -Vector3.up porque estamos en un entorno 3D de Rigidbody
+        if (Physics.Raycast(transform.position, -Vector3.up, out RaycastHit hit, 20f, maskFloor))
         {
-            if (_lastFloor.Equals(hit))
+            // Si pisamos el mismo suelo Y no cambiamos el ritmo (caminar/correr), evitamos procesar de más
+            if (_lastFloor.Equals(hit) && _lastStateWasRunning == runningActual)
                 return;
+
             var s = hit.collider.gameObject.GetComponent<ISoundFloor>();
 
             if (s != null)
-                walkSound = s.GetClip();
+            {
+                currentFloorClip = s.GetClip(runningActual);
+            }
+            else
+            {
+                currentFloorClip = defaultSound;
+            }
 
             _lastFloor = hit;
+            _lastStateWasRunning = runningActual;
         }
         else
         {
             _lastFloor = default;
-            walkSound = defaultSound;
+            currentFloorClip = defaultSound;
+            _lastStateWasRunning = runningActual;
         }
     }
 
@@ -130,12 +147,10 @@ public class PlayerController : MonoBehaviour
     {
         if (animator == null) return;
 
-        // 1. Detectamos si el jugador realmente se está moviendo usando el input
         bool tieneInputMovimiento = !moveInput.IsNearlyZero();
         bool presionaShift = Input.GetKey(KeyCode.LeftShift);
 
-        // 2. CASO ESPECIAL SPRINT INTERRUMPIDO: 
-        // Si está agachado internamente pero quiere correr, forzamos los estados del Animator
+        // SPRINT INTERRUMPIDO DESDE AGACHADO:
         if (tieneInputMovimiento && isCrouching && presionaShift)
         {
             animator.SetBool("isCrouching", false);
@@ -144,18 +159,12 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            // 3. COMPORTAMIENTO NORMAL BASADO EN ESTADOS:
-            // isCrouching en el Animator sigue fielmente a la variable del script
+            // COMPORTAMIENTO NORMAL
             animator.SetBool("isCrouching", isCrouching);
-
-            // isWalking tiene que ser TRUE siempre que haya input de movimiento Y no se esté corriendo
             animator.SetBool("isWalking", tieneInputMovimiento && !presionaShift);
-
-            // isRunning solo es TRUE si se mueve de pie y presiona Shift
             animator.SetBool("isRunning", tieneInputMovimiento && !isCrouching && presionaShift);
         }
 
-        // Control de velocidad de la animación (Power-ups)
         float velocidadAnimacion = 1f;
         if (speedMultiplier < 1f)
         {
@@ -210,36 +219,51 @@ public class PlayerController : MonoBehaviour
             currentState = MoveState.Idle;
             currentNoiseRadius = 0f;
         }
-        else if (isCrouching)
+        else if (isCrouching && !isRunning)
         {
+            // Si está agachado y no intenta correr, se pausa el sonido de pasos (Sigilo absoluto)
             if (audioSource.isPlaying) audioSource.Pause();
             currentState = MoveState.Crouching;
             currentNoiseRadius = crouchNoiseRadius * noiseMultiplier;
         }
         else if (isRunning)
         {
-            if (audioSource.isPlaying) audioSource.Stop();
+            // Estado de Sprint (Cancela visualmente el Crouch gracias a UpdateAnimations)
             currentState = MoveState.Running;
             currentNoiseRadius = runNoiseRadius * noiseMultiplier;
-        }
-        else
-        {
-            // Solo reproducir si no estaba sonando ya
-            if (!audioSource.isPlaying || audioSource.clip != walkSound)
+
+            if (!audioSource.isPlaying || audioSource.clip != currentFloorClip)
             {
-                audioSource.clip = walkSound;
+                audioSource.clip = currentFloorClip;
                 audioSource.loop = true;
                 audioSource.Play();
             }
-
+        }
+        else
+        {
+            // Caminata Normal de Pie
             currentState = MoveState.Walking;
             currentNoiseRadius = walkNoiseRadius * noiseMultiplier;
+
+            if (!audioSource.isPlaying || audioSource.clip != currentFloorClip)
+            {
+                audioSource.clip = currentFloorClip;
+                audioSource.loop = true;
+                audioSource.Play();
+            }
         }
     }
 
     float GetCurrentSpeed()
     {
         float baseSpeed = 0f;
+
+        // Si hay input de movimiento y mantenés shift, tu velocidad física es de Run, 
+        // incluso si venías de estar agachado
+        if (!moveInput.IsNearlyZero() && Input.GetKey(KeyCode.LeftShift))
+        {
+            return runSpeed * speedMultiplier;
+        }
 
         switch (currentState)
         {
@@ -259,7 +283,6 @@ public class PlayerController : MonoBehaviour
         {
             float targetHeight = isCrouching ? crouchHeight : standHeight;
             playerCollider.height = targetHeight;
-
             playerCollider.center = new Vector3(0f, targetHeight / 2f, 0f);
         }
     }
@@ -305,11 +328,8 @@ public class PlayerController : MonoBehaviour
         isHidden = true;
         controlsEnabled = false;
 
-        // se apaga el script de tercera persona durante el viaje ---
         if (camaraJugador != null) camaraJugador.enabled = false;
-
         if (contenedorModeloVisual != null) contenedorModeloVisual.SetActive(false);
-
         if (rb != null) { rb.linearVelocity = Vector3.zero; rb.isKinematic = true; }
         if (playerCollider != null) playerCollider.enabled = false;
 
@@ -335,7 +355,6 @@ public class PlayerController : MonoBehaviour
         mainCam.transform.position = cameraPoint.position;
         mainCam.transform.rotation = cameraPoint.rotation;
 
-        // --- se enciende el script de cámara justo antes de entrar a Primera Persona ---
         if (camaraJugador != null)
         {
             camaraJugador.enabled = true;
@@ -345,7 +364,6 @@ public class PlayerController : MonoBehaviour
 
     private IEnumerator TransitionToExit(Transform targetPos)
     {
-        // --- sale de 1ª persona y apagamos el script ---
         if (camaraJugador != null)
         {
             camaraJugador.ExitFirstPersonMode();
@@ -379,14 +397,12 @@ public class PlayerController : MonoBehaviour
         mainCam.transform.rotation = targetCamRot;
 
         if (contenedorModeloVisual != null) contenedorModeloVisual.SetActive(true);
-
         if (playerCollider != null) playerCollider.enabled = true;
         if (rb != null) rb.isKinematic = false;
 
         controlsEnabled = true;
         isHidden = false;
 
-        // --- enciende el script de cámara para que vuelva a seguir en 3ª persona ---
         if (camaraJugador != null) camaraJugador.enabled = true;
     }
 

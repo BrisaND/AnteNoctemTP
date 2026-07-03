@@ -24,6 +24,14 @@ public class GameManager : Singleton<GameManager>
     // Cualquiera puede leer currentTime, pero solo el GameManager puede modificarlo
     public float currentTime { get; private set; }
 
+    [Header("Timer Audio Alerta")]
+    [Tooltip("El AudioSource que reproducirá el sonido de cuenta regresiva.")]
+    public AudioSource timerAudioSource;
+    [Tooltip("Clip de audio del timer (ej: tic-tac o alarma rápida).")]
+    public AudioClip timerAlertClip;
+    [Tooltip("¿A cuántos segundos del final debe empezar a sonar el audio?")]
+    public float alertTimeThreshold = 30f;
+
     [Header("Score")]
     public int targetScore = 100;
     public int currentScore { get; private set; }
@@ -53,6 +61,7 @@ public class GameManager : Singleton<GameManager>
     public System.Action<GameState> OnGameStateChanged;
 
     private bool hasNotifiedQuota = false;
+    private bool isAlertAudioPlaying = false; // Flag para controlar que no se ejecute Play() en cada frame
 
     void Start()
     {
@@ -64,6 +73,12 @@ public class GameManager : Singleton<GameManager>
         currentScore = 0;
 
         if (quotaNotificationCanvas != null) quotaNotificationCanvas.SetActive(false);
+
+        // Auto-configuración del AudioSource si te olvidás de asignarlo en el inspector
+        if (timerAudioSource == null)
+        {
+            timerAudioSource = GetComponent<AudioSource>();
+        }
     }
 
     void Update()
@@ -75,12 +90,14 @@ public class GameManager : Singleton<GameManager>
         {
             currentTime -= Time.deltaTime;
             UpdateDayState();
+            CheckTimerAudioAlert(); // <-- Verificamos el estado del sonido del timer en cada frame
 
             // Si se acaba el tiempo y no llego a la cuota, pierde.
             // Si ya tiene la cuota, no lo mandamos a victoria: tiene que llegar a la puerta de salida.
             if (currentTime <= 0f)
             {
                 currentTime = 0f;
+                StopTimerAudio(); // Detener sonido al expirar el tiempo
 
                 if (currentScore < targetScore)
                 {
@@ -92,6 +109,31 @@ public class GameManager : Singleton<GameManager>
                 }
             }
         }
+    }
+
+    // Controla cuándo debe empezar a reproducirse el audio de alerta
+    void CheckTimerAudioAlert()
+    {
+        if (timerAudioSource == null || timerAlertClip == null) return;
+
+        // Si entramos en la zona crítica de tiempo y todavía no está sonando, lo activamos
+        if (currentTime <= alertTimeThreshold && !isAlertAudioPlaying)
+        {
+            isAlertAudioPlaying = true;
+            timerAudioSource.clip = timerAlertClip;
+            timerAudioSource.loop = true; // Forzamos a que sea un bucle continuo
+            timerAudioSource.Play();
+        }
+    }
+
+    // Apaga el audio de forma segura
+    void StopTimerAudio()
+    {
+        if (timerAudioSource != null && timerAudioSource.isPlaying)
+        {
+            timerAudioSource.Stop();
+        }
+        isAlertAudioPlaying = false;
     }
 
     // Calculamos en que parte del dia estamos segun el tiempo que queda
@@ -111,10 +153,10 @@ public class GameManager : Singleton<GameManager>
         }
     }
 
-    
+
     /// Devuelve el progreso del dia entre 0 y 1. 1 = inicio del nivel (dia), 0 = se acabo el tiempo (noche).
     /// Los enemigos y el DayNightCycle lo usan para volverse mas peligrosos a medida que oscurece.
-    
+
     public float GetDayProgress01()
     {
         if (levelDuration <= 0f) return 0f;
@@ -160,6 +202,7 @@ public class GameManager : Singleton<GameManager>
     {
         if (gameState != GameState.Playing) return;
         gameState = GameState.GameOver;
+        StopTimerAudio(); // Matamos el audio si perdés
         OnGameStateChanged?.Invoke(gameState);
 
         // Si habia un QuickEvent activo, lo cerramos
@@ -177,6 +220,7 @@ public class GameManager : Singleton<GameManager>
     {
         if (gameState != GameState.Playing) return;
         gameState = GameState.Victory;
+        StopTimerAudio(); // Matamos el audio si ganás
         OnGameStateChanged?.Invoke(gameState);
 
         if (QuickEventManager.Instance != null && QuickEventManager.Instance.IsActive)
@@ -191,6 +235,7 @@ public class GameManager : Singleton<GameManager>
     {
         Time.timeScale = 1f;
         UnlockCursor();
+        StopTimerAudio();
         Debug.Log("Cargando pantalla de victoria desde la puerta de escape...");
         SceneManager.LoadScene("Victory");
     }
@@ -198,6 +243,7 @@ public class GameManager : Singleton<GameManager>
     public void ReturnToBase()
     {
         Time.timeScale = 1f;
+        StopTimerAudio();
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
         SceneManager.LoadScene("Base");
@@ -212,6 +258,7 @@ public class GameManager : Singleton<GameManager>
     public void RestartLevel()
     {
         Time.timeScale = 1f;
+        StopTimerAudio();
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
         var scene = SceneManager.GetActiveScene();

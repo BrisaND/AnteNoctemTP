@@ -33,6 +33,14 @@ public class CitizenAI : MonoBehaviour
     [Tooltip("Punto de origen opcional (si se deja vacío, saldrán del centro del ciudadano)")]
     public Transform particleSpawnPoint;
 
+    [Header("Audio del Ciudadano")]
+    [Tooltip("El sonido de éxito (ej. Monedas o Caja Registradora) al robarle a este ciudadano")]
+    public AudioClip robSoundSuccess;
+    [Tooltip("El sonido de sorpresa o grito cuando el jugador falla el skillcheck y es atrapado")]
+    public AudioClip detainSound;
+    [Tooltip("AudioSource opcional. Si se deja vacío, se creará uno automáticamente o se usará el del objeto.")]
+    public AudioSource audioSource;
+
     [Header("Debug")]
     public bool showGizmo = true;
 
@@ -58,6 +66,20 @@ public class CitizenAI : MonoBehaviour
     {
         agent = GetComponent<NavMeshAgent>();
         if (warden == null) warden = FindFirstObjectByType<WardenAI>();
+
+        // Si no asignaste un AudioSource en el inspector, intentamos buscar uno en el objeto
+        if (audioSource == null)
+        {
+            audioSource = GetComponent<AudioSource>();
+
+            // Si tampoco tiene un componente AudioSource adjunto, se lo agregamos dinámicamente
+            if (audioSource == null)
+            {
+                audioSource = gameObject.AddComponent<AudioSource>();
+                audioSource.playOnAwake = false;
+                audioSource.spatialBlend = 1f; // Lo hace 3D para que suene posicionado en el entorno
+            }
+        }
     }
 
     void Start()
@@ -181,11 +203,17 @@ public class CitizenAI : MonoBehaviour
                 GameManager.Instance.AddScore(Random.Range(5, 16));
             }
 
-            //Ráfaga de partículas de dinero
+            // Ráfaga de partículas de dinero
             if (pesosParticlesPrefab != null)
             {
                 Vector3 spawnPos = particleSpawnPoint != null ? particleSpawnPoint.position : transform.position;
                 Instantiate(pesosParticlesPrefab, spawnPos, Quaternion.identity);
+            }
+
+            // Sonido de éxito al robar
+            if (audioSource != null && robSoundSuccess != null)
+            {
+                audioSource.PlayOneShot(robSoundSuccess);
             }
 
             if (currentState != CitizenState.Patrolling) ResumePatrol();
@@ -199,6 +227,12 @@ public class CitizenAI : MonoBehaviour
     IEnumerator DetainPlayerCoroutine()
     {
         currentState = CitizenState.Detaining;
+
+        // --- NUEVO: REPRODUCCIÓN DEL SONIDO DE SORPRESA/AGARRE ---
+        if (audioSource != null && detainSound != null)
+        {
+            audioSource.PlayOneShot(detainSound);
+        }
 
         if (warden != null && player != null)
         {

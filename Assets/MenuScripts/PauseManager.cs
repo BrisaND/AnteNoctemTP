@@ -74,6 +74,9 @@ public class PauseManager : Singleton<PauseManager>
 
         if (pausePanel != null) pausePanel.SetActive(false);
         Time.timeScale = 1f;
+
+        AudioListener.pause = false;
+
         isPaused = false;
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
@@ -83,6 +86,9 @@ public class PauseManager : Singleton<PauseManager>
     {
         if (pausePanel != null) pausePanel.SetActive(true);
         Time.timeScale = 0f;
+
+        AudioListener.pause = true;
+
         isPaused = true;
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
@@ -91,6 +97,9 @@ public class PauseManager : Singleton<PauseManager>
     public void LoadMainMenu()
     {
         Time.timeScale = 1f;
+
+        AudioListener.pause = false;
+
         LoadingScreen.LoadingScreenAsync("Menu");
     }
 }

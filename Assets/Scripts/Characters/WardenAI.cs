@@ -20,7 +20,7 @@ public class WardenAI : EnemyBase
     [SerializeField] private string animIdle = "IDLE";
     [SerializeField] private string animCaminar = "WALKING";
     [SerializeField] private string animCorrer = "RUN";
-    [SerializeField] private string animBuscar = "MIRAR"; // Ajustalo al nombre real que tenga (ej. "Alert", "Idle")
+    [SerializeField] private string animBuscar = "MIRAR";
 
     [Header("Captura")]
     public float catchDistance = 1.5f;
@@ -40,7 +40,16 @@ public class WardenAI : EnemyBase
 
     [Header("Busqueda (cuando lo pierde)")]
     public float searchDuration = 5f;
+    [Tooltip("Radio de búsqueda aleatoria al perder al jugador.")]
     public float searchRadius = 5f;
+
+    [Header("Audio del Warden")]
+    [Tooltip("El AudioSource que reproducirá los sonidos del policía.")]
+    public AudioSource audioSource;
+    [Tooltip("Silbato o grito que suena una sola vez EXACTAMENTE cuando detecta al jugador.")]
+    public AudioClip alertSound;
+    [Tooltip("Pasos pesados corriendo (con Loop activado) que suenan durante toda la persecución.")]
+    public AudioClip chaseFootsteps;
 
     [Header("Modificadores de Noche")]
     [Tooltip("Multiplicador para distancia de vision cuando es de noche")]
@@ -72,6 +81,18 @@ public class WardenAI : EnemyBase
         baseViewAngle = viewAngle;
 
         if (wardenAnimator == null) wardenAnimator = GetComponentInChildren<Animator>();
+
+        // Configuración automática del AudioSource si no se asignó en el Inspector
+        if (audioSource == null)
+        {
+            audioSource = GetComponent<AudioSource>();
+            if (audioSource == null)
+            {
+                audioSource = gameObject.AddComponent<AudioSource>();
+                audioSource.playOnAwake = false;
+                audioSource.spatialBlend = 1f; // Audio 3D posicional
+            }
+        }
     }
 
     protected override void Update()
@@ -148,6 +169,14 @@ public class WardenAI : EnemyBase
                 if (sees || hears)
                 {
                     lastKnownPosition = player.position;
+
+                    // Si por algún motivo se pausaron los pasos de carrera pero sigue persiguiendo, los reactivamos
+                    if (audioSource != null && chaseFootsteps != null && !audioSource.isPlaying)
+                    {
+                        audioSource.clip = chaseFootsteps;
+                        audioSource.loop = true;
+                        audioSource.Play();
+                    }
                 }
                 else if (HasReachedDestination())
                 {
@@ -164,6 +193,27 @@ public class WardenAI : EnemyBase
 
     void StartChase()
     {
+        // Solo disparamos el audio de alerta si veníamos de un estado que NO era persecución
+        if (currentState != WardenState.Chasing)
+        {
+            if (audioSource != null)
+            {
+                // 1. Silbato o grito (No interrumpe el bucle posterior)
+                if (alertSound != null)
+                {
+                    audioSource.PlayOneShot(alertSound);
+                }
+
+                // 2. Transición inmediata a pasos corriendo en loop
+                if (chaseFootsteps != null)
+                {
+                    audioSource.clip = chaseFootsteps;
+                    audioSource.loop = true;
+                    audioSource.Play();
+                }
+            }
+        }
+
         currentState = WardenState.Chasing;
         agent.speed = chaseSpeed;
         lastKnownPosition = player.position;
@@ -178,6 +228,13 @@ public class WardenAI : EnemyBase
     {
         currentState = WardenState.Searching;
         searchTimer = 0f;
+
+        // Al perderlo, apagamos el loop de pasos de carrera pesados
+        if (audioSource != null && audioSource.isPlaying)
+        {
+            audioSource.Stop();
+        }
+
         PickRandomSearchPoint();
     }
 
@@ -231,6 +288,8 @@ public class WardenAI : EnemyBase
 
     void TriggerGameOver()
     {
+        // Apagamos los bucles de sonido antes del game over
+        if (audioSource != null) audioSource.Stop();
         if (GameManager.Instance != null) GameManager.Instance.GameOver("Te atrapo un Warden");
     }
 
@@ -249,7 +308,8 @@ public class WardenAI : EnemyBase
 
     private IEnumerator ApproachAndKillRoutine(Transform target)
     {
-        currentState = WardenState.Chasing;
+        // Al activarse el script cinemático de muerte, también aseguramos que suene la persecución
+        StartChase();
         agent.isStopped = false;
         agent.speed = chaseSpeed;
 

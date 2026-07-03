@@ -14,8 +14,14 @@ public class SurveillanceCamera : MonoBehaviour
     [Header("Rotacion")]
     [Tooltip("Grados que oscila a cada lado del centro")]
     public float swingAngle = 60f;
-    [Tooltip("Velocidad de oscilacion en grados por segundo")]
+    [Tooltip("Velocidad de oscilacion en grados por second")]
     public float swingSpeed = 30f;
+
+    [Header("Audio de Movimiento")]
+    [Tooltip("El AudioSource que reproducirá el motor/zumbido de la cámara.")]
+    public AudioSource movementAudioSource;
+    [Tooltip("El clip de audio en bucle para el movimiento (motor mecánico).")]
+    public AudioClip movementClip;
 
     [Header("Deteccion")]
     [Tooltip("Tiempo que tarda en alertar despues de verte")]
@@ -62,11 +68,39 @@ public class SurveillanceCamera : MonoBehaviour
         baseViewDistance = viewDistance;
         baseSwingSpeed = swingSpeed;
         baseDetectionDelay = detectionDelay;
+
+        // Auto-configuración preventiva del AudioSource si falta asignar
+        if (movementAudioSource == null)
+        {
+            movementAudioSource = GetComponent<AudioSource>();
+        }
+
+        // Configuración inicial del sonido para que sea continuo en 3D
+        if (movementAudioSource != null && movementClip != null)
+        {
+            movementAudioSource.clip = movementClip;
+            movementAudioSource.loop = true;
+            movementAudioSource.spatialBlend = 1f; // Audio posicional 3D
+        }
     }
 
     void Update()
     {
-        if (GameManager.Instance != null && GameManager.Instance.gameState != GameManager.GameState.Playing) return;
+        // Si el juego está en pausa o terminó, apagamos/pausamos el sonido y salimos
+        if (GameManager.Instance != null && GameManager.Instance.gameState != GameManager.GameState.Playing)
+        {
+            if (movementAudioSource != null && movementAudioSource.isPlaying)
+            {
+                movementAudioSource.Stop();
+            }
+            return;
+        }
+
+        // Si el juego corre normalmente, nos aseguramos de que el loop empiece a sonar
+        if (movementAudioSource != null && !movementAudioSource.isPlaying && movementClip != null)
+        {
+            movementAudioSource.Play();
+        }
 
         ApplyDayNightModifiers();
         Swing();

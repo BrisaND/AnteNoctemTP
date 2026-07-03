@@ -6,10 +6,14 @@ using TMPro;
 
 public class EventFlower : MonoBehaviour
 {
-    [Header("Configuración")]
+    [Header("Configuración General")]
     [Tooltip("Número de pulsaciones de espacio necesarias para ganar")]
     public int requiredPresses = 10;
-    [Tooltip("Duración para completar el skillcheck")]
+
+    [Header("Configuración de Tiempo")]
+    [Tooltip("¿Este skillcheck tiene un límite de tiempo para completarse?")]
+    public bool useTimeLimit = false;
+    [Tooltip("Duración máxima si 'useTimeLimit' está activado")]
     public float duration = 3f;
 
     [Header("UI")]
@@ -23,28 +27,41 @@ public class EventFlower : MonoBehaviour
     public UnityEvent<bool> OnSkillCheckResult;
 
     int currentPresses;
-    float timer;
     bool active;
+    float timer;
 
     // Iniciacion del skillcheck
     public void StartSkillCheck()
     {
         if (active) return;
         currentPresses = 0;
-        timer = duration;
         active = true;
+        timer = duration; // Inicializa el temporizador por si se usa tiempo
+
         if (uiPanel != null) uiPanel.SetActive(true);
         UpdateUI();
         StartCoroutine(RunSkillCheck());
     }
 
-    // Lógica del skillcheck
+    // Lógica del skillcheck unificada
     IEnumerator RunSkillCheck()
     {
-        while (active && timer > 0f)
+        while (active)
         {
-            timer -= Time.unscaledDeltaTime;
+            // Si tiene límite de tiempo, restamos frame a frame
+            if (useTimeLimit)
+            {
+                timer -= Time.unscaledDeltaTime;
 
+                // Si el tiempo se agota, el jugador pierde el skillcheck
+                if (timer <= 0f)
+                {
+                    Finish(false);
+                    yield break;
+                }
+            }
+
+            // Detección de la pulsación
             if (Input.GetKeyDown(KeyCode.Space))
             {
                 currentPresses++;
@@ -57,13 +74,9 @@ public class EventFlower : MonoBehaviour
                 }
             }
 
-            UpdateUI();
             yield return null;
         }
-
-        if (active) Finish(false);
     }
-
 
     // Actualiza el texto y la barra de progreso
     void UpdateUI()
@@ -89,7 +102,7 @@ public class EventFlower : MonoBehaviour
         OnSkillCheckResult?.Invoke(success);
     }
 
-    // Permite cancelar el skillcheck desde fuera (si el jugador se libera o muere)
+    // Permite cancelar el skillcheck desde fuera
     public void Cancel()
     {
         if (!active) return;
@@ -98,6 +111,5 @@ public class EventFlower : MonoBehaviour
         OnSkillCheckResult?.Invoke(false);
     }
 
-    // para saber si el skillcheck está activo
     public bool IsActive => active;
 }
