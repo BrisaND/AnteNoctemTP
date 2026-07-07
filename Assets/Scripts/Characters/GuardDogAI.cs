@@ -78,6 +78,8 @@ public class GuardDogAI : EnemyBase
     private bool isStunned = false;
     private bool wasPlayerHidden = false;
 
+    Coroutine _CoroutineDog;
+
     protected override void Start()
     {
         base.Start();
@@ -282,9 +284,10 @@ public class GuardDogAI : EnemyBase
 
                 if (audioSource != null && barkTrackingSound != null && audioSource.clip != barkTrackingSound)
                 {
-                    audioSource.clip = barkTrackingSound;
-                    audioSource.loop = true;
-                    audioSource.Play();
+                    if(_CoroutineDog != null) 
+                        StopCoroutine(_CoroutineDog); 
+
+                    _CoroutineDog = StartCoroutine(CoroutineDog());
                 }
 
                 Vector3 dirToPlayer = (player.position - transform.position).normalized;
@@ -310,6 +313,17 @@ public class GuardDogAI : EnemyBase
                     ReturnToPatrol();
                 }
             }
+        }
+    }
+
+    IEnumerator CoroutineDog()
+    {
+        audioSource.clip = barkTrackingSound;
+        while (true)
+        {
+            audioSource.loop = false;
+            audioSource.Play();
+            yield return new WaitForSeconds(Random.Range(0.5f, 4));
         }
     }
 
@@ -393,7 +407,10 @@ public class GuardDogAI : EnemyBase
                 minigameActive = false;
                 if (escapeMinigame != null) escapeMinigame.Cancel();
 
-                if (audioSource != null) audioSource.Stop();
+                if (_CoroutineDog != null)
+                    StopCoroutine(_CoroutineDog);
+
+                _CoroutineDog = null;
                 if (player != null) player.SetParent(null); // Despegamos al jugador del perro antes del GameOver
 
                 if (GameManager.Instance != null) GameManager.Instance.GameOver("El perro te llevo al Warden");
@@ -480,18 +497,17 @@ public class GuardDogAI : EnemyBase
             case DogState.Tracking:
                 if (barkTrackingSound != null)
                 {
-                    audioSource.clip = barkTrackingSound;
-                    audioSource.loop = true;
-                    audioSource.Play();
+                    if (_CoroutineDog != null)
+                        StopCoroutine(_CoroutineDog);
+                    _CoroutineDog = StartCoroutine(CoroutineDog());
                 }
                 break;
 
             case DogState.Dragging:
                 if (growlDraggingSound != null)
                 {
-                    audioSource.clip = growlDraggingSound;
-                    audioSource.loop = true;
-                    audioSource.Play();
+
+
                 }
                 break;
         }
