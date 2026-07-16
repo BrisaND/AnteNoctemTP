@@ -17,6 +17,10 @@ public class HidingSpot : MonoBehaviour
     [Tooltip("Si está marcado, el perro podrá meterse y sacarte a la fuerza si te vio entrar")]
     public bool isVulnerableToDog = false;
 
+    [Header("Seguridad (Anti-Bugs)")]
+    [Tooltip("Distancia máxima en metros a la que puedes estar antes de que el tacho te desconecte a la fuerza (por si falla la física de Unity).")]
+    public float distanciaSeguridadMax = 3.5f;
+
     private bool playerInRange = false;
     private PlayerController playerCtrl;
 
@@ -40,20 +44,13 @@ public class HidingSpot : MonoBehaviour
                 playerCtrl.currentHidingSpot = this;
             }
         }
-
     }
 
     void OnTriggerExit(Collider other)
     {
         if (other.CompareTag("Player"))
         {
-            playerInRange = false;
-            playerCtrl = null;
-
-            if (playerCtrl != null && playerCtrl.currentHidingSpot == this)
-            {
-                playerCtrl.currentHidingSpot = null;
-            }
+            ForceExitRange();
         }
     }
 
@@ -61,6 +58,14 @@ public class HidingSpot : MonoBehaviour
     {
         if (playerInRange && playerCtrl != null)
         {
+            // Si el jugador ya no está escondido y se alejó físicamente, pero el Trigger de Unity no se enteró, se desconecta a la fuerza.
+            float distanciaReal = Vector3.Distance(transform.position, playerCtrl.transform.position);
+            if (distanciaReal > distanciaSeguridadMax && !playerCtrl.isHidden)
+            {
+                ForceExitRange();
+                return;
+            }
+
             if (Input.GetKeyDown(KeyCode.E))
             {
                 if (!playerCtrl.isHidden)
@@ -70,8 +75,25 @@ public class HidingSpot : MonoBehaviour
                 else
                 {
                     playerCtrl.ExitHide(puntoSalida);
+
+                    // Esto evita que el bucle de input te vuelva a meter al presionar E.
+                    ForceExitRange();
                 }
             }
+        }
+    }
+
+    public void ForceExitRange()
+    {
+        playerInRange = false;
+
+        if (playerCtrl != null)
+        {
+            if (playerCtrl.currentHidingSpot == this)
+            {
+                playerCtrl.currentHidingSpot = null;
+            }
+            playerCtrl = null;
         }
     }
 }

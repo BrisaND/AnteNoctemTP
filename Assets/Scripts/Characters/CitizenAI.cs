@@ -8,58 +8,54 @@ using System.Collections;
 [RequireComponent(typeof(NavMeshAgent))]
 public class CitizenAI : MonoBehaviour
 {
-    // En vez de usar numeros sueltos (0 = patrullando, 1 = deteniendo), usamos nombres.
     public enum CitizenState { Patrolling, Detaining }
 
-    [Header("Configuración de Animaciones (Nombres del Asset)")]
-    [Tooltip("Referencia al componente Animator del Ciudadano")]
+    [Header("Configuración de Animaciones")]
     public Animator citizenAnimator;
-    [Tooltip("Tiempo de transición entre estados de animación")]
     public float transitionTime = 0.25f;
     [SerializeField] private string animIdle = "MIRARSE";
     [SerializeField] private string animCaminar = "WALKINGPONE";
     [SerializeField] private string animSujetar = "SURPRISE";
 
-    [Header("Configuración")]
+    [Header("Configuración de Robo")]
     public bool randomizeDifficulty = true;
     public RobberySystem.DifficultyLevel difficulty = RobberySystem.DifficultyLevel.Easy;
+
+    [Header("Economía y Puntos")]
+    [Tooltip("Dinero mínimo que puede tener este ciudadano")]
+    public float dineroMinimo = 10f;
+    [Tooltip("Dinero máximo que puede tener este ciudadano")]
+    public float dineroMaximo = 50f;
+
+    // Variables de control de estado
+    private float dineroActual;
+    private bool haSidoRobado = false;
 
     [Header("Patrullaje")]
     public List<Transform> patrolPoints = new List<Transform>();
 
     [Header("Efectos Visuales")]
-    [Tooltip("Arrastrá acá el Prefab FX_RoboPesos que configuraste")]
     public GameObject pesosParticlesPrefab;
-    [Tooltip("Punto de origen opcional (si se deja vacío, saldrán del centro del ciudadano)")]
     public Transform particleSpawnPoint;
 
     [Header("Audio del Ciudadano")]
-    [Tooltip("El sonido de éxito (ej. Monedas o Caja Registradora) al robarle a este ciudadano")]
     public AudioClip robSoundSuccess;
-    [Tooltip("El sonido de sorpresa o grito cuando el jugador falla el skillcheck y es atrapado")]
     public AudioClip detainSound;
-    [Tooltip("AudioSource opcional. Si se deja vacío, se creará uno automáticamente o se usará el del objeto.")]
     public AudioSource audioSource;
 
     [Header("Debug")]
     public bool showGizmo = true;
 
-    // Cualquiera puede leer el estado actual, pero solo este script puede cambiarlo
     public CitizenState currentState { get; private set; } = CitizenState.Patrolling;
 
-    // Variables privadas que nadie de afuera puede modificar
     private float _detentionDuration = 4f;
     private float _interactDistance = 2.8f;
 
-    // El ciudadano TIENE estos componentes adentro
     private NavMeshAgent agent;
     private Transform player;
     private PlayerController playerCtrl;
     private int currentPatrolIndex = 0;
-
     private WardenAI warden;
-
-    // Almacena la última animación reproducida para evitar reiniciar clips idénticos en cada frame
     private string currentPlayingAnim = "";
 
     void Awake()
@@ -67,32 +63,29 @@ public class CitizenAI : MonoBehaviour
         agent = GetComponent<NavMeshAgent>();
         if (warden == null) warden = FindFirstObjectByType<WardenAI>();
 
-        // Si no asignaste un AudioSource en el inspector, intentamos buscar uno en el objeto
         if (audioSource == null)
         {
             audioSource = GetComponent<AudioSource>();
-
-            // Si tampoco tiene un componente AudioSource adjunto, se lo agregamos dinámicamente
             if (audioSource == null)
             {
                 audioSource = gameObject.AddComponent<AudioSource>();
                 audioSource.playOnAwake = false;
-                audioSource.spatialBlend = 1f; // Lo hace 3D para que suene posicionado en el entorno
+                audioSource.spatialBlend = 1f;
             }
         }
     }
 
     void Start()
     {
-        // Decidimos la dificultad del SkillCheck con una tirada random
+        // Asignamos una cantidad de dinero aleatoria al nacer
+        dineroActual = Random.Range(dineroMinimo, dineroMaximo);
+
         if (randomizeDifficulty)
         {
             float roll = Random.value;
             if (roll < 0.6f) difficulty = RobberySystem.DifficultyLevel.Easy;
             else if (roll < 0.9f) difficulty = RobberySystem.DifficultyLevel.Medium;
             else difficulty = RobberySystem.DifficultyLevel.Hard;
-
-            Debug.Log($"Citizen {gameObject.name} | roll={roll} | dificultad={difficulty}");
         }
 
         var p = GameObject.FindGameObjectWithTag("Player");
@@ -119,18 +112,15 @@ public class CitizenAI : MonoBehaviour
                 ControlarAnimacionMovimiento();
                 break;
             case CitizenState.Detaining:
-                // Forzamos la animación de forcejeo o sujeción mientras dura la corrutina
                 ReproducirAnimacion(animSujetar);
                 break;
         }
     }
 
-    // --- CONTROL DE ANIMACIÓN EN PATRULLA ---
     private void ControlarAnimacionMovimiento()
     {
         if (citizenAnimator == null) return;
 
-        // Evaluamos la velocidad real en el NavMeshAgent para decidir si camina o se queda quieto
         if (agent != null && agent.velocity.sqrMagnitude > 0.1f)
         {
             ReproducirAnimacion(animCaminar);
@@ -157,7 +147,6 @@ public class CitizenAI : MonoBehaviour
         if (patrolPoints.Count == 0) return;
         agent.speed = 2f;
 
-        // Al llegar, va al siguiente punto sin detenerse
         if (HasReachedDestination())
         {
             GoToNextPatrolPoint();
@@ -167,6 +156,9 @@ public class CitizenAI : MonoBehaviour
     void CheckPlayerInteractionWhileMoving()
     {
         if (player == null) return;
+
+        // Validamos que el ciudadano NO haya sido robado para permitir interacción
+        if (haSidoRobado) return;
 
         float dist = Vector3.Distance(transform.position, player.position);
         if (dist <= _interactDistance)
@@ -180,20 +172,23 @@ public class CitizenAI : MonoBehaviour
 
     void StartInteraction()
     {
-        if (QuickEventManager.Instance == null) return;
-        if (QuickEventManager.Instance.IsActive) return;
+        if (QuickEventManager.Instance == null || QuickEventManager.Instance.IsActive) return;
+        if (GameManager.Instance != null && GameManager.Instance.gameState != GameManager.GameState.Playing) return;
 
-        if (GameManager.Instance != null &&
-            GameManager.Instance.gameState != GameManager.GameState.Playing) return;
+        // Doble validación por seguridad
+        if (haSidoRobado) return;
 
         QuickEventManager.Instance.StartQuickEvent(this);
     }
 
-    // El QuickEventManager nos avisa si el jugador zafo del skillcheck
     public void OnPlayerInteractionResult(bool success)
     {
         if (success)
         {
+            // Marcamos al ciudadano como robado. Ya no se podrá interactuar con él, ni dará más dinero/puntos.
+            haSidoRobado = true;
+
+            // Gestión de Puntos
             if (RobberySystem.Instance != null)
             {
                 RobberySystem.Instance.AwardStealPoints(difficulty, "Robo al ciudadano");
@@ -203,14 +198,18 @@ public class CitizenAI : MonoBehaviour
                 GameManager.Instance.AddScore(Random.Range(5, 16));
             }
 
-            // Ráfaga de partículas de dinero
+            // Gestión de Dinero (Aquí llamas al sistema donde el jugador guarda su dinero)
+            Debug.Log($"¡Éxito! Has robado {dineroActual:F2} pesos.");
+            // Ejemplo: Wallet.Instance.AddMoney(dineroActual);
+
+            // Efectos Visuales
             if (pesosParticlesPrefab != null)
             {
                 Vector3 spawnPos = particleSpawnPoint != null ? particleSpawnPoint.position : transform.position;
                 Instantiate(pesosParticlesPrefab, spawnPos, Quaternion.identity);
             }
 
-            // Sonido de éxito al robar
+            // Audio del ciudadano específico
             if (audioSource != null && robSoundSuccess != null)
             {
                 audioSource.PlayOneShot(robSoundSuccess);
@@ -228,7 +227,6 @@ public class CitizenAI : MonoBehaviour
     {
         currentState = CitizenState.Detaining;
 
-        // --- NUEVO: REPRODUCCIÓN DEL SONIDO DE SORPRESA/AGARRE ---
         if (audioSource != null && detainSound != null)
         {
             audioSource.PlayOneShot(detainSound);
@@ -245,10 +243,8 @@ public class CitizenAI : MonoBehaviour
 
         if (playerCtrl != null) playerCtrl.SetControlsEnabled(false);
 
-        // Guardamos la altura Y original del jugador (la del piso)
         float playerGroundY = player != null ? player.position.y : 0f;
 
-        // Congelamos temporalmente el Rigidbody del jugador para que no forcejee con nuestro movimiento manual
         Rigidbody playerRb = player != null ? player.GetComponent<Rigidbody>() : null;
         bool wasKinematic = false;
         if (playerRb != null)
@@ -259,7 +255,6 @@ public class CitizenAI : MonoBehaviour
             playerRb.isKinematic = true;
         }
 
-        // Mantener al jugador agarrado por X segundos, siempre a la altura del piso
         Vector3 holdOffsetXZ = transform.forward * 0.8f;
         float timer = 0f;
         while (timer < _detentionDuration)
@@ -268,19 +263,21 @@ public class CitizenAI : MonoBehaviour
             if (player != null)
             {
                 Vector3 targetPos = transform.position + holdOffsetXZ;
-                targetPos.y = playerGroundY; // Forzamos que se mantenga a nivel del piso
+                targetPos.y = playerGroundY;
                 player.position = targetPos;
             }
             yield return null;
         }
 
-        // Restauramos el Rigidbody para que vuelva a caer con gravedad
         if (playerRb != null)
         {
             playerRb.isKinematic = wasKinematic;
         }
 
         if (playerCtrl != null) playerCtrl.SetControlsEnabled(true);
+
+        // Si el robo falló, NO se marca como robado (haSidoRobado = false). 
+        // El jugador puede intentar robarle de nuevo si quiere arriesgarse.
         ResumePatrol();
     }
 

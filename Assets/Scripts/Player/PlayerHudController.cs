@@ -30,8 +30,8 @@ public class PlayerHudController : MonoBehaviour
         var gm = GameManager.Instance;
         if (gm != null)
         {
-            // Muestra puntos " [actual] / [necesarios]"
-            scoreText.text = $"{gm.currentScore} / {gm.targetScore}";
+            // Muestra puntos " [actual] - [necesarios]"
+            scoreText.text = $"{gm.currentScore} - {gm.targetScore}";
         }
     }
 

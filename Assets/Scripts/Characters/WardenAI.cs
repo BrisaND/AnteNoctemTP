@@ -7,7 +7,6 @@ using System.Collections;
 using AnteNoctem.Core;
 using AnteNoctem.Enemies;
 
-// Acá solo agregamos lo unico del Warden: ver y oir al jugador, perseguirlo, buscarlo cuando lo pierde.
 public class WardenAI : EnemyBase
 {
     public enum WardenState { Patrolling, Chasing, Searching }
@@ -44,12 +43,20 @@ public class WardenAI : EnemyBase
     public float searchRadius = 5f;
 
     [Header("Audio del Warden")]
-    [Tooltip("El AudioSource que reproducirá los sonidos del policía.")]
+    [Tooltip("El único AudioSource que usará el guardia.")]
     public AudioSource audioSource;
-    [Tooltip("Silbato o grito que suena una sola vez EXACTAMENTE cuando detecta al jugador.")]
-    public AudioClip alertSound;
+    [Tooltip("El sonido del silbato que sonará al detectar al jugador y de forma periódica durante la persecución.")]
+    public AudioClip whistleSound;
     [Tooltip("Pasos pesados corriendo (con Loop activado) que suenan durante toda la persecución.")]
     public AudioClip chaseFootsteps;
+
+    [Header("Intervalos del Silbato")]
+    [Tooltip("Tiempo mínimo de silencio entre silbatazos mientras persigue.")]
+    public float minWhistleDelay = 2f;
+    [Tooltip("Tiempo máximo de silencio entre silbatazos mientras persigue.")]
+    public float maxWhistleDelay = 6f;
+    [Tooltip("Probabilidad de que sople el silbato en cada ciclo (0.7 = 70% de probabilidad).")]
+    [Range(0f, 1f)] public float whistleProbability = 0.7f;
 
     [Header("Modificadores de Noche")]
     [Tooltip("Multiplicador para distancia de vision cuando es de noche")]
@@ -69,8 +76,8 @@ public class WardenAI : EnemyBase
     private Vector3 lastKnownPosition;
 
     private Coroutine approachCoroutine;
+    private Coroutine _whistleCoroutine;
 
-    // Almacena la última animación reproducida para evitar reiniciar clips idénticos en bucle
     private string currentPlayingAnim = "";
 
     protected override void Start()
@@ -82,7 +89,7 @@ public class WardenAI : EnemyBase
 
         if (wardenAnimator == null) wardenAnimator = GetComponentInChildren<Animator>();
 
-        // Configuración automática del AudioSource si no se asignó en el Inspector
+        // Configuración automática del AudioSource
         if (audioSource == null)
         {
             audioSource = GetComponent<AudioSource>();
@@ -90,7 +97,7 @@ public class WardenAI : EnemyBase
             {
                 audioSource = gameObject.AddComponent<AudioSource>();
                 audioSource.playOnAwake = false;
-                audioSource.spatialBlend = 1f; // Audio 3D posicional
+                audioSource.spatialBlend = 1f; // Audio 3D
             }
         }
     }
@@ -103,14 +110,12 @@ public class WardenAI : EnemyBase
         HandleBehavior();
         ControlarAnimacionesPorEstado();
 
-        // Si el jugador esta a tiro y no esta escondido, lo atrapamos
         if (player != null && !playerCtrl.isHidden && Vector3.Distance(transform.position, player.position) < catchDistance)
         {
             TriggerGameOver();
         }
     }
 
-    // --- CONTROL DE ANIMACIONES SEGÚN EL ESTADO ACTUAL Y VELOCIDAD ---
     private void ControlarAnimacionesPorEstado()
     {
         if (wardenAnimator == null) return;
@@ -118,7 +123,6 @@ public class WardenAI : EnemyBase
         switch (currentState)
         {
             case WardenState.Patrolling:
-                // Evaluamos si el NavMeshAgent se está desplazando realmente
                 if (agent != null && agent.velocity.sqrMagnitude > 0.1f)
                 {
                     ReproducirAnimacion(animCaminar);
@@ -141,12 +145,10 @@ public class WardenAI : EnemyBase
 
     private void ReproducirAnimacion(string nombreAnimacion)
     {
-        // Evitamos recalcular la transición si ya está corriendo ese clip
         if (currentPlayingAnim == nombreAnimacion) return;
 
         if (wardenAnimator != null)
         {
-            // Forzamos el fundido suavizado usando el sistema directo que lee los clips del asset
             wardenAnimator.CrossFadeInFixedTime(nombreAnimacion, transitionTime);
             currentPlayingAnim = nombreAnimacion;
         }
@@ -170,7 +172,6 @@ public class WardenAI : EnemyBase
                 {
                     lastKnownPosition = player.position;
 
-                    // Si por algún motivo se pausaron los pasos de carrera pero sigue persiguiendo, los reactivamos
                     if (audioSource != null && chaseFootsteps != null && !audioSource.isPlaying)
                     {
                         audioSource.clip = chaseFootsteps;
@@ -193,28 +194,11 @@ public class WardenAI : EnemyBase
 
     void StartChase()
     {
-        // Solo disparamos el audio de alerta si veníamos de un estado que NO era persecución
         if (currentState != WardenState.Chasing)
         {
-            if (audioSource != null)
-            {
-                // 1. Silbato o grito (No interrumpe el bucle posterior)
-                if (alertSound != null)
-                {
-                    audioSource.PlayOneShot(alertSound);
-                }
-
-                // 2. Transición inmediata a pasos corriendo en loop
-                if (chaseFootsteps != null)
-                {
-                    audioSource.clip = chaseFootsteps;
-                    audioSource.loop = true;
-                    audioSource.Play();
-                }
-            }
+            CambiarEstado(WardenState.Chasing);
         }
 
-        currentState = WardenState.Chasing;
         agent.speed = chaseSpeed;
         lastKnownPosition = player.position;
     }
@@ -226,15 +210,8 @@ public class WardenAI : EnemyBase
 
     void StartSearch()
     {
-        currentState = WardenState.Searching;
+        CambiarEstado(WardenState.Searching);
         searchTimer = 0f;
-
-        // Al perderlo, apagamos el loop de pasos de carrera pesados
-        if (audioSource != null && audioSource.isPlaying)
-        {
-            audioSource.Stop();
-        }
-
         PickRandomSearchPoint();
     }
 
@@ -245,8 +222,75 @@ public class WardenAI : EnemyBase
         if (HasReachedDestination()) PickRandomSearchPoint();
         if (searchTimer >= searchDuration)
         {
-            currentState = WardenState.Patrolling;
+            CambiarEstado(WardenState.Patrolling);
             GoToNextPatrolPoint();
+        }
+    }
+
+    private void CambiarEstado(WardenState nuevoEstado)
+    {
+        if (currentState == nuevoEstado) return;
+        currentState = nuevoEstado;
+
+        if (_whistleCoroutine != null)
+        {
+            StopCoroutine(_whistleCoroutine);
+            _whistleCoroutine = null;
+        }
+
+        if (audioSource != null)
+        {
+            audioSource.Stop();
+        }
+
+        switch (currentState)
+        {
+            case WardenState.Patrolling:
+                break;
+
+            case WardenState.Chasing:
+                if (audioSource != null && chaseFootsteps != null)
+                {
+                    audioSource.clip = chaseFootsteps;
+                    audioSource.loop = true;
+                    audioSource.Play();
+                }
+
+                _whistleCoroutine = StartCoroutine(CoroutineChaseWhistle());
+                break;
+
+            case WardenState.Searching:
+                break;
+        }
+    }
+
+    // Corrutina que gestiona el silbato usando intervalos y probabilidad (como el perro)
+    IEnumerator CoroutineChaseWhistle()
+    {
+        // Primer silbatazo instantáneo al iniciar la persecución para alertar visualmente al jugador
+        if (whistleSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(whistleSound);
+            yield return new WaitForSeconds(whistleSound.length);
+        }
+
+        while (currentState == WardenState.Chasing)
+        {
+            // Espera el delay de silencio antes de tirar la probabilidad del próximo silbatazo
+            float delay = Random.Range(minWhistleDelay, maxWhistleDelay);
+            yield return new WaitForSeconds(delay);
+
+            if (currentState == WardenState.Chasing && whistleSound != null && audioSource != null)
+            {
+                // Tiramos probabilidad (ej. 70% de que suene en este ciclo)
+                if (Random.value <= whistleProbability)
+                {
+                    audioSource.PlayOneShot(whistleSound);
+
+                    // Esperamos que el clip termine de sonar antes de reactivar el bucle
+                    yield return new WaitForSeconds(whistleSound.length);
+                }
+            }
         }
     }
 
@@ -288,8 +332,9 @@ public class WardenAI : EnemyBase
 
     void TriggerGameOver()
     {
-        // Apagamos los bucles de sonido antes del game over
         if (audioSource != null) audioSource.Stop();
+        if (_whistleCoroutine != null) StopCoroutine(_whistleCoroutine);
+
         if (GameManager.Instance != null) GameManager.Instance.GameOver("Te atrapo un Warden");
     }
 
@@ -308,7 +353,6 @@ public class WardenAI : EnemyBase
 
     private IEnumerator ApproachAndKillRoutine(Transform target)
     {
-        // Al activarse el script cinemático de muerte, también aseguramos que suene la persecución
         StartChase();
         agent.isStopped = false;
         agent.speed = chaseSpeed;

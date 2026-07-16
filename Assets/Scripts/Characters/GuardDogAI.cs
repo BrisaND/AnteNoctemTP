@@ -51,13 +51,25 @@ public class GuardDogAI : EnemyBase
     [Tooltip("Distancia que el perro retrocede al ser zafado")]
     public float knockbackDistance = 2.5f;
 
-    [Header("Audio del Perro")]
+    [Header("Audio del Perro - Configuración")]
     [Tooltip("El AudioSource que reproducirá los sonidos del perro.")]
     public AudioSource audioSource;
-    [Tooltip("Ladridos rápidos en bucle para cuando persigue al jugador.")]
+
+    [Space(5)]
+    [Tooltip("Ladrido para persecución y alertas.")]
     public AudioClip barkTrackingSound;
+    [Tooltip("Gruñido para alternar con ladridos durante el rastreo (opcional). Si queda vacío, usará el gruñido de arrastre.")]
+    public AudioClip growlTrackingSound;
     [Tooltip("Gruñido agresivo continuo para cuando te muerde y te arrastra.")]
     public AudioClip growlDraggingSound;
+
+    [Header("Intervalos de Sonido (Tracking)")]
+    [Tooltip("Tiempo mínimo de silencio entre ladridos/gruñidos durante el rastreo.")]
+    public float minSoundDelay = 0.5f;
+    [Tooltip("Tiempo máximo de silencio entre ladridos/gruñidos durante el rastreo.")]
+    public float maxSoundDelay = 2.5f;
+    [Tooltip("Probabilidad de que suene un Ladrido en lugar de un Gruñido (0.7 = 70% ladrido, 30% gruñido).")]
+    [Range(0f, 1f)] public float barkProbability = 0.7f;
 
     [Header("Modificadores de Noche")]
     public float nightScentRangeMultiplier = 1.8f;
@@ -160,9 +172,7 @@ public class GuardDogAI : EnemyBase
         switch (currentState)
         {
             case DogState.Patrolling:
-                Patrol();
-                if (!isStunned) CheckForScent();
-                CheckBite();
+                PatrollBehavior();
                 break;
 
             case DogState.Tracking:
@@ -173,6 +183,13 @@ public class GuardDogAI : EnemyBase
             case DogState.Dragging:
                 break;
         }
+    }
+
+    private void PatrollBehavior()
+    {
+        Patrol();
+        if (!isStunned) CheckForScent();
+        CheckBite();
     }
 
     void CheckForScent()
@@ -282,12 +299,13 @@ public class GuardDogAI : EnemyBase
 
                 CambiarAnimacion(idLadrar);
 
+                // Si descubrimos al jugador escondido, ladramos frenéticamente
                 if (audioSource != null && barkTrackingSound != null && audioSource.clip != barkTrackingSound)
                 {
-                    if(_CoroutineDog != null) 
-                        StopCoroutine(_CoroutineDog); 
+                    if (_CoroutineDog != null)
+                        StopCoroutine(_CoroutineDog);
 
-                    _CoroutineDog = StartCoroutine(CoroutineDog());
+                    _CoroutineDog = StartCoroutine(CoroutineHidingSpotBarks());
                 }
 
                 Vector3 dirToPlayer = (player.position - transform.position).normalized;
@@ -316,14 +334,53 @@ public class GuardDogAI : EnemyBase
         }
     }
 
-    IEnumerator CoroutineDog()
+    // CORRUTINA A: Alterna ladridos y gruñidos aleatoriamente mientras persigue al jugador
+    IEnumerator CoroutineDogSounds()
     {
+        while (currentState == DogState.Tracking)
+        {
+            AudioClip clipToPlay = null;
+            float roll = Random.value;
+
+            if (roll <= barkProbability)
+            {
+                clipToPlay = barkTrackingSound;
+            }
+            else
+            {
+                // Usa el gruñido de tracking. Si no hay, usa el de arrastre como fallback
+                clipToPlay = growlTrackingSound != null ? growlTrackingSound : growlDraggingSound;
+            }
+
+            if (clipToPlay != null)
+            {
+                audioSource.clip = clipToPlay;
+                audioSource.loop = false;
+                audioSource.Play();
+
+                // Esperamos que termine de sonar el clip entero antes de calcular el siguiente intervalo
+                yield return new WaitForSeconds(clipToPlay.length);
+            }
+
+            // Espera un silencio aleatorio antes de volver a sonar
+            float randomDelay = Random.Range(minSoundDelay, maxSoundDelay);
+            yield return new WaitForSeconds(randomDelay);
+        }
+    }
+
+    // CORRUTINA B: Ladrido constante y desesperado al encontrar al jugador en un escondite
+    IEnumerator CoroutineHidingSpotBarks()
+    {
+        if (barkTrackingSound == null) yield break;
+
         audioSource.clip = barkTrackingSound;
+        audioSource.loop = false;
+
         while (true)
         {
-            audioSource.loop = false;
             audioSource.Play();
-            yield return new WaitForSeconds(Random.Range(0.5f, 4));
+            // Espera a que termine el ladrido + un intervalo muy corto para simular desesperación
+            yield return new WaitForSeconds(barkTrackingSound.length + Random.Range(0.15f, 0.4f));
         }
     }
 
@@ -435,7 +492,14 @@ public class GuardDogAI : EnemyBase
     IEnumerator StunAndKnockback()
     {
         isStunned = true;
+
+        // Detener sonidos y corrutinas activas al quedar aturdido
         if (audioSource != null) audioSource.Stop();
+        if (_CoroutineDog != null)
+        {
+            StopCoroutine(_CoroutineDog);
+            _CoroutineDog = null;
+        }
 
         if (player != null)
         {
@@ -488,26 +552,32 @@ public class GuardDogAI : EnemyBase
 
         if (audioSource == null) return;
 
+        // Limpieza absoluta de audios y corrutinas anteriores al cambiar de estado
+        if (_CoroutineDog != null)
+        {
+            StopCoroutine(_CoroutineDog);
+            _CoroutineDog = null;
+        }
+        audioSource.Stop();
+
         switch (currentState)
         {
             case DogState.Patrolling:
-                audioSource.Stop();
+                // El patrullaje normal del perro es silencioso (o puedes meter jadeos aquí si quisieras)
                 break;
 
             case DogState.Tracking:
-                if (barkTrackingSound != null)
-                {
-                    if (_CoroutineDog != null)
-                        StopCoroutine(_CoroutineDog);
-                    _CoroutineDog = StartCoroutine(CoroutineDog());
-                }
+                // Comenzamos el ciclo de ladridos/gruñidos aleatorios intercalados
+                _CoroutineDog = StartCoroutine(CoroutineDogSounds());
                 break;
 
             case DogState.Dragging:
+                // Durante el arrastre, el gruñido es continuo (loop de toda la vida)
                 if (growlDraggingSound != null)
                 {
-
-
+                    audioSource.clip = growlDraggingSound;
+                    audioSource.loop = true;
+                    audioSource.Play();
                 }
                 break;
         }

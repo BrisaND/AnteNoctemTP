@@ -4,12 +4,9 @@ using TMPro;
 using System.Collections.Generic;
 using AnteNoctem.Core;
 
-// ===== GENERICS + HERENCIA =====
-// Hereda de Singleton<ChapuceroShop>. Asi tiene Instance automaticamente y solo puede haber uno.
 // El <ChapuceroShop> es el parametro generico: le dice al Singleton de que tipo es esta instancia.
 public class ChapuceroShop : Singleton<ChapuceroShop>
 {
-    // ===== ENUM =====
     // Los estados posibles de la tienda. Asi sabemos en que momento del flujo esta.
     public enum ShopState { Closed, Greeting, ShowingItem, Confirmation }
 
@@ -42,13 +39,11 @@ public class ChapuceroShop : Singleton<ChapuceroShop>
     [TextArea(2, 4)] public string purchaseSuccessText = "Listo, ahi lo tenes. Que te sirva.";
     [TextArea(2, 4)] public string alreadyPurchasedText = "Eso ya te lo arme antes, no necesitas otro.";
 
-    // ===== ENCAPSULAMIENTO =====
     // Variables privadas: solo este script puede modificarlas. Asi protegemos el estado interno.
     private ShopState currentState = ShopState.Closed;
     private ShopItem currentlyViewedItem;
     private List<Button> spawnedItemButtons = new List<Button>();
 
-    // ===== GETTER (expression-bodied) =====
     // Otros scripts pueden leer si la tienda esta abierta, pero no pueden cambiarlo desde afuera
     public bool IsOpen => currentState != ShopState.Closed;
 
@@ -141,7 +136,6 @@ public class ChapuceroShop : Singleton<ChapuceroShop>
 
         if (dialogueTextBuy != null) dialogueTextBuy.text = txt;
 
-        // ===== USO DE STRUCT =====
         // Creamos un MaterialRequirement con el costo del item y usamos su ToString para mostrarlo
         if (costText != null)
         {
@@ -170,7 +164,6 @@ public class ChapuceroShop : Singleton<ChapuceroShop>
     {
         if (currentlyViewedItem == null) return;
 
-        // ===== USO DE STRUCT =====
         // Armamos el costo del item como un MaterialRequirement y le preguntamos si el jugador puede pagarlo
         var requirement = new MaterialRequirement(
             currentlyViewedItem.hiloCost,

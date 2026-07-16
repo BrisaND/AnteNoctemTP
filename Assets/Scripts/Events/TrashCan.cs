@@ -31,12 +31,16 @@ public class TrashCan : MonoBehaviour, IInteractable
 
     [Header("SkillCheck")]
     [Tooltip("Referencia al componente EventFlower asignado al Tacho")]
-    public EventFlower quickEventFlower; // <-- Vuelve a ser EventFlower
+    public EventFlower quickEventFlower;
     public int quickRequiredPresses = 10;
     public float skillCheckTimeLimit = 4f;
 
     [Header("Control del jugador")]
     public bool pausePlayerMovement = true;
+
+    // Guardado de posición original de la flor para evitar desfases
+    private Vector3 initialFlowerLocalPos;
+    private Quaternion initialFlowerLocalRot;
 
     GameObject currentPlayer;
     PlayerController currentPlayerController;
@@ -46,13 +50,20 @@ public class TrashCan : MonoBehaviour, IInteractable
 
     void Start()
     {
-        if (deactivateFlowerAtStart) flowerObject.SetActive(false);
+        // Guardamos la transformación local original de la flor antes de hacer nada
+        if (flowerObject != null)
+        {
+            initialFlowerLocalPos = flowerObject.transform.localPosition;
+            initialFlowerLocalRot = flowerObject.transform.localRotation;
+        }
+
+        if (deactivateFlowerAtStart && flowerObject != null) flowerObject.SetActive(false);
         if (trashCanAnimator == null) trashCanAnimator = GetComponentInChildren<Animator>();
         if (flowerAnimator == null && flowerObject != null) flowerAnimator = flowerObject.GetComponent<Animator>();
 
         if (quickEventFlower != null)
         {
-            quickEventFlower.useTimeLimit = true; // <-- Forzamos el uso de tiempo
+            quickEventFlower.useTimeLimit = true;
             quickEventFlower.requiredPresses = quickRequiredPresses;
             quickEventFlower.duration = skillCheckTimeLimit;
         }
@@ -111,7 +122,7 @@ public class TrashCan : MonoBehaviour, IInteractable
             float tiempoSkillCheck = skillCheckTimeLimit;
             if (currentPlayerController != null) tiempoSkillCheck += currentPlayerController.escapeTimeBonus;
 
-            quickEventFlower.useTimeLimit = true; // Asegura que use tiempo
+            quickEventFlower.useTimeLimit = true;
             quickEventFlower.duration = tiempoSkillCheck;
             quickEventFlower.StartSkillCheck();
 
@@ -134,12 +145,14 @@ public class TrashCan : MonoBehaviour, IInteractable
             }
             else
             {
+                // ATAQUE DE LA FLOR
                 if (flowerAnimator != null) flowerAnimator.SetTrigger(flowerAttackTrigger);
 
                 float timer = 0f;
                 while (timer < catchDuration)
                 {
                     timer += Time.deltaTime;
+                    // Forzamos que la tapa siga abierta durante el ataque
                     if (trashCanAnimator != null) trashCanAnimator.SetBool(animatorBoolParam, true);
                     yield return null;
                 }
@@ -165,7 +178,13 @@ public class TrashCan : MonoBehaviour, IInteractable
 
     void OpenTrashCanAndShowFlower()
     {
-        if (flowerObject != null) flowerObject.SetActive(true);
+        if (flowerObject != null)
+        {
+            // Forzamos que vuelva a su posición de diseño antes de activarse
+            flowerObject.transform.localPosition = initialFlowerLocalPos;
+            flowerObject.transform.localRotation = initialFlowerLocalRot;
+            flowerObject.SetActive(true);
+        }
         if (trashCanAnimator != null) trashCanAnimator.SetBool(animatorBoolParam, true);
     }
 

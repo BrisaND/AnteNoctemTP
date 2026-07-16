@@ -96,6 +96,7 @@
     <Compile Include="Assets\Scripts\Events\TrashCan.cs" />
     <Compile Include="Assets\Scripts\Events\RobberySystem.cs" />
     <Compile Include="Assets\Scripts\Hub\DebugHUD.cs" />
+    <Compile Include="Assets\Scripts\Game\VolumeSlider.cs" />
     <Compile Include="Assets\Scripts\Hub\LevelButtonEffects.cs" />
     <Compile Include="Assets\Scripts\Events\ScentMarker.cs" />
     <Compile Include="Assets\Scripts\Player\SoundFloor.cs" />

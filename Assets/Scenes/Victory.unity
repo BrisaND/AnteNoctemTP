@@ -335,7 +335,7 @@ GameObject:
   - component: {fileID: 298460545}
   - component: {fileID: 298460544}
   m_Layer: 5
-  m_Name: Text (TMP)
+  m_Name: TextMenu
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -350,7 +350,7 @@ RectTransform:
   m_GameObject: {fileID: 298460542}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.67475, y: 0.51137275, z: 0.67475}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1762305283}
@@ -382,8 +382,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Menu
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8d91adbcefdd1064ea6f24d0b8a18ee0, type: 2}
+  m_sharedMaterial: {fileID: 4247963728086857924, guid: 8d91adbcefdd1064ea6f24d0b8a18ee0, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -486,7 +486,7 @@ RectTransform:
   m_GameObject: {fileID: 585112704}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 8.625553, y: 4.7354116, z: 4.7354116}
+  m_LocalScale: {x: 9.479483, y: 5.2042174, z: 5.2042174}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1848283439}
@@ -625,7 +625,7 @@ GameObject:
   - component: {fileID: 989057685}
   - component: {fileID: 989057684}
   m_Layer: 5
-  m_Name: Text (TMP) (1)
+  m_Name: FinishText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -640,14 +640,14 @@ RectTransform:
   m_GameObject: {fileID: 989057682}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1.1543269, y: 1.1543269, z: 1.1543269}
+  m_LocalScale: {x: 1.5298294, y: 1.5298294, z: 1.5298294}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1848283439}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -27, y: 189}
+  m_AnchoredPosition: {x: -27, y: 179}
   m_SizeDelta: {x: -639.99994, y: -419.99997}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &989057684
@@ -672,8 +672,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "Es el... \xBFFin?"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8d91adbcefdd1064ea6f24d0b8a18ee0, type: 2}
+  m_sharedMaterial: {fileID: 4247963728086857924, guid: 8d91adbcefdd1064ea6f24d0b8a18ee0, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -705,7 +705,7 @@ MonoBehaviour:
   m_fontSizeMax: 72
   m_fontStyle: 1
   m_HorizontalAlignment: 2
-  m_VerticalAlignment: 512
+  m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_wordSpacing: 0
@@ -990,7 +990,7 @@ RectTransform:
   m_GameObject: {fileID: 1762305282}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1.594, y: 1.594, z: 1.594}
+  m_LocalScale: {x: 1.6912502, y: 2.6462991, z: 1.6912502}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 298460543}
@@ -1022,9 +1022,9 @@ MonoBehaviour:
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
   m_Colors:
-    m_NormalColor: {r: 0.4188679, g: 0.4188679, b: 0.4188679, a: 1}
-    m_HighlightedColor: {r: 0.14509805, g: 0.19607845, b: 0.1137255, a: 1}
-    m_PressedColor: {r: 0.11764707, g: 0.16078432, b: 0.09411766, a: 1}
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 1, g: 0.7025654, b: 0.6698113, a: 1}
+    m_PressedColor: {r: 0.71309644, g: 1, b: 0.5566037, a: 1}
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
     m_ColorMultiplier: 1
@@ -1077,8 +1077,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 1
+  m_Sprite: {fileID: -246004909, guid: c12112aab2db1c4458201600feb5c4f0, type: 3}
+  m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
