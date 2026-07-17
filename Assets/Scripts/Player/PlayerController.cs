@@ -55,6 +55,9 @@ public class PlayerController : MonoBehaviour
     private Camera mainCam;
     private bool controlsEnabled = true;
 
+    // Cache del componente Stamina
+    private PlayerStamina staminaComponent;
+
     [Header("Audio")]
     public AudioSource audioSource;
     public AudioClip defaultSound;
@@ -90,6 +93,9 @@ public class PlayerController : MonoBehaviour
             camLocalOffset = transform.InverseTransformPoint(mainCam.transform.position);
             camLocalRotationOffset = Quaternion.Inverse(transform.rotation) * mainCam.transform.rotation;
         }
+
+        // Cache del componente Stamina (puede ser null si no lo tiene)
+        staminaComponent = GetComponent<PlayerStamina>();
     }
 
     void Update()
@@ -148,7 +154,10 @@ public class PlayerController : MonoBehaviour
         if (animator == null) return;
 
         bool tieneInputMovimiento = !moveInput.IsNearlyZero();
-        bool presionaShift = Input.GetKey(KeyCode.LeftShift);
+
+        // Chequeamos si la stamina permite correr (para la animacion)
+        bool canRun = staminaComponent == null || staminaComponent.CanRun;
+        bool presionaShift = Input.GetKey(KeyCode.LeftShift) && canRun;
 
         // SPRINT INTERRUMPIDO DESDE AGACHADO:
         if (tieneInputMovimiento && isCrouching && presionaShift)
@@ -211,7 +220,10 @@ public class PlayerController : MonoBehaviour
     void UpdateState()
     {
         bool isMoving = !moveInput.IsNearlyZero();
-        bool isRunning = Input.GetKey(KeyCode.LeftShift);
+
+        // Chequeamos si la stamina permite correr
+        bool canRun = staminaComponent == null || staminaComponent.CanRun;
+        bool isRunning = Input.GetKey(KeyCode.LeftShift) && canRun;
 
         if (!isMoving)
         {
@@ -258,9 +270,11 @@ public class PlayerController : MonoBehaviour
     {
         float baseSpeed = 0f;
 
-        // Si hay input de movimiento y mantenés shift, tu velocidad física es de Run, 
-        // incluso si venías de estar agachado
-        if (!moveInput.IsNearlyZero() && Input.GetKey(KeyCode.LeftShift))
+        // Chequeamos si la stamina permite correr
+        bool canRun = staminaComponent == null || staminaComponent.CanRun;
+
+        // Si hay input de movimiento, manteneas shift Y hay stamina, corres
+        if (!moveInput.IsNearlyZero() && Input.GetKey(KeyCode.LeftShift) && canRun)
         {
             return runSpeed * speedMultiplier;
         }

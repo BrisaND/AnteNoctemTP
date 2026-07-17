@@ -213,6 +213,19 @@ public class GameManager : Singleton<GameManager>
         }
         Time.timeScale = 1f;
         UnlockCursor();
+        // Reseteamos los materiales al perder
+        if (MaterialInventory.Instance != null)
+        {
+            MaterialInventory.Instance.ResetInventory();
+        }
+
+        // Reseteamos los power-ups al perder
+        var player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            var powerUps = player.GetComponent<PlayerPowerUps>();
+            if (powerUps != null) powerUps.ResetPowerUps();
+        }
         SceneManager.LoadScene("GameOver");
     }
 

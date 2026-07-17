@@ -61,19 +61,19 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.0.62f1-x86_64\Editor\Data\Tools\Unity.SourceGenerators\Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\Scripts\Player\GloverPowerUp.cs" />
     <Compile Include="Assets\Scripts\Player\HidingSpot.cs" />
     <Compile Include="Assets\Scripts\Characters\CitizenSpawner.cs" />
     <Compile Include="Assets\Scripts\Hub\BaseMapView.cs" />
+    <Compile Include="Assets\Scripts\Player\PowerUpUIController.cs" />
     <Compile Include="Assets\MenuScripts\MenuManager.cs" />
     <Compile Include="Assets\Scripts\Characters\CitizenAI.cs" />
     <Compile Include="Assets\Scripts\Game\GameManager.cs" />
     <Compile Include="Assets\Scripts\Characters\SurveillanceCamera.cs" />
     <Compile Include="Assets\Scripts\Player\ISoundFloor.cs" />
-    <Compile Include="Assets\Scripts\Player\PowerUp.cs" />
     <Compile Include="Assets\Scripts\Events\StealableObject.cs" />
     <Compile Include="Assets\Scripts\Characters\ChapuceroInteractable.cs" />
     <Compile Include="Assets\Scripts\Hub\HubMapInteractable.cs" />
+    <Compile Include="Assets\Scripts\Player\StaminaUIController.cs" />
     <Compile Include="Assets\Scripts\Characters\CitizenDifficultyIndicator.cs" />
     <Compile Include="Assets\Scripts\Hub\HubLevelSelectUI.cs" />
     <Compile Include="Assets\Scripts\Characters\EnemyBase.cs" />
@@ -81,7 +81,6 @@
     <Compile Include="Assets\MenuScripts\PauseManager.cs" />
     <Compile Include="Assets\Scripts\Events\TimeClockUI.cs" />
     <Compile Include="Assets\Scripts\Player\PlayerInteractor.cs" />
-    <Compile Include="Assets\Scripts\Player\SocksPowerUp.cs" />
     <Compile Include="Assets\Scripts\Events\ScreenFader.cs" />
     <Compile Include="Assets\Scripts\Events\SkillCheck.cs" />
     <Compile Include="Assets\Scripts\Characters\WardenAI.cs" />
@@ -89,8 +88,9 @@
     <Compile Include="Assets\Scripts\Characters\Vector3Extensions.cs" />
     <Compile Include="Assets\Scripts\Characters\ChapuceroShop.cs" />
     <Compile Include="Assets\Scripts\Characters\GuardDogAI.cs" />
+    <Compile Include="Assets\Scripts\Player\PlayerStamina.cs" />
     <Compile Include="Assets\Scripts\Player\PlayerController.cs" />
-    <Compile Include="Assets\Scripts\Player\BootsPowerUp.cs" />
+    <Compile Include="Assets\Scripts\Player\PlayerPowerUps.cs" />
     <Compile Include="Assets\TutorialInfo\Scripts\Readme.cs" />
     <Compile Include="Assets\Scripts\Events\BaseSkillCheck.cs" />
     <Compile Include="Assets\Scripts\Events\TrashCan.cs" />

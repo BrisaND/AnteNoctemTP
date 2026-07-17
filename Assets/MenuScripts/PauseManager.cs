@@ -48,6 +48,13 @@ public class PauseManager : Singleton<PauseManager>
                 return;
             }
 
+            // No permitir pausar si la tienda esta abierta
+            if (ChapuceroShop.Instance != null &&
+    (ChapuceroShop.Instance.IsOpen || ChapuceroShop.Instance.JustClosedThisFrame))
+            {
+                return;
+            }
+
             if (isPaused) ResumeGame();
             else PauseGame();
         }

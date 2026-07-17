@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: c98585252f6639e4780b981af339d5ed
+guid: 30965a122b9147848a1e7b7a9d10dc11
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -97,23 +97,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: menu pmuerte_0
+      name: uy barra_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 0
-        width: 842
-        height: 595
+        x: 350
+        y: 4
+        width: 173
+        height: 28
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: afb4be3e55ab2214a8c6338683cfb188
-      internalID: -1789980603
+      spriteID: 33bfdfc416efaba4b86a88363546f8cc
+      internalID: -1604120286
       vertices: []
       indices: 
       edges: []
@@ -122,7 +122,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 350b1bb322f733b468845620411ba232
+    spriteID: 10e675b945515674c899f4e2d936b6b1
     internalID: 0
     vertices: []
     indices: 
@@ -132,7 +132,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      menu pmuerte_0: -1789980603
+      uy barra_0: -1604120286
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -1,10 +1,13 @@
 using UnityEngine;
-using System.Collections; // Necesario para IEnumerator y las Corrutinas
+using System.Collections;
+using UnityEngine.SceneManagement; // Necesario para cargar la escena de la base
 
 public class ExitZone : MonoBehaviour
 {
     [Header("Configuración")]
     public string playerTag = "Player";
+    [Tooltip("Nombre exacto de la escena de la Base en tu proyecto")]
+    public string baseSceneName = "Base";
 
     [Tooltip("Sub-panel de UI opcional que dice 'Necesitas más puntos para escapar' si intenta irse antes")]
     public GameObject warningCanvasMessage;
@@ -12,10 +15,12 @@ public class ExitZone : MonoBehaviour
 
     private bool isShowingWarning = false;
 
+    // Esta variable estática sobrevive al cambio de escenas. 
+    // Recuerda si el jugador ya completó la primera fase e hizo su viaje a la base.
+    public static bool hasVisitedBase = false;
+
     private void Awake()
     {
-        // Usamos Awake para asegurarnos de apagar el cartel en el frame 0 
-        // independientemente de cómo esté configurado en el Inspector.
         if (warningCanvasMessage != null) warningCanvasMessage.SetActive(false);
     }
 
@@ -28,9 +33,7 @@ public class ExitZone : MonoBehaviour
                 // ¿El jugador alcanzó o superó el puntaje objetivo?
                 if (GameManager.Instance.currentScore >= GameManager.Instance.targetScore)
                 {
-                    Debug.Log("¡Escape exitoso por la puerta! Iniciando fundido a negro...");
-
-                    // --- CAMBIO AQUÍ: Iniciamos la corrutina de escape con fade ---
+                    Debug.Log("Puntaje alcanzado. Evaluando destino de escape...");
                     StartCoroutine(EscapeSequenceRoutine());
                 }
                 else
@@ -45,25 +48,39 @@ public class ExitZone : MonoBehaviour
         }
     }
 
-    // --- NUEVA CORRUTINA DE SECUENCIA DE ESCAPE ---
     private IEnumerator EscapeSequenceRoutine()
     {
-        // 1. Buscamos si el ScreenFader existe en la escena actual
+        // 1. Fundido a negro de la pantalla
         if (ScreenFader.Instance != null)
         {
-            // Esperamos a que la corrutina del fader termine por completo (pantalla 100% negra)
             yield return StartCoroutine(ScreenFader.Instance.FadeToBlackRoutine());
         }
         else
         {
-            // Salvaguarda: Si te olvidaste de poner el ScreenFader en esta escena, 
-            // espera medio segundo para simular un tiempo de reacción y que no se rompa el juego.
             Debug.LogWarning("No se encontró una instancia de ScreenFader en la escena.");
             yield return new WaitForSeconds(0.5f);
         }
 
-        // 2. Recién cuando terminó el fundido a negro, cargamos la escena definitiva mediante el GameManager
-        GameManager.Instance.CompleteLevelAndLoadVictory();
+        // 2. Decidir a dónde enviar al jugador
+        if (!hasVisitedBase)
+        {
+            // PRIMER ESCAPE -> Ir a la Base
+            hasVisitedBase = true;
+            Debug.Log("Primer escape exitoso. Viajando a la base para comprar items...");
+
+            // Cargamos la escena de la base usando el SceneManager
+            SceneManager.LoadScene(baseSceneName);
+        }
+        else
+        {
+            // SEGUNDO ESCAPE -> ¡Victoria definitiva!
+            Debug.Log("Segundo escape exitoso con puntos recolectados de nuevo. ¡Ganaste!");
+
+            // Reseteamos la variable para futuras partidas antes de ir a la victoria
+            hasVisitedBase = false;
+
+            GameManager.Instance.CompleteLevelAndLoadVictory();
+        }
     }
 
     private IEnumerator ShowWarningRoutine()

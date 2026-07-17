@@ -47,6 +47,9 @@ public class ChapuceroShop : Singleton<ChapuceroShop>
     // Otros scripts pueden leer si la tienda esta abierta, pero no pueden cambiarlo desde afuera
     public bool IsOpen => currentState != ShopState.Closed;
 
+    // Bandera para avisar al PauseManager que este frame la tienda uso el Esc
+    public bool JustClosedThisFrame { get; private set; } = false;
+
     void Start()
     {
         if (shopCanvas != null) shopCanvas.SetActive(false);
@@ -57,10 +60,13 @@ public class ChapuceroShop : Singleton<ChapuceroShop>
 
     void Update()
     {
-        // Esc para cerrar la tienda
-        if (currentState != ShopState.Closed && Input.GetKeyDown(KeyCode.Escape))
+        // Reseteamos la bandera al comienzo del frame
+        JustClosedThisFrame = false;
+
+        if (currentState != ShopState.Closed && Input.GetKeyDown(KeyCode.Q))
         {
             CloseShop();
+            JustClosedThisFrame = true;
         }
     }
 
@@ -76,12 +82,25 @@ public class ChapuceroShop : Singleton<ChapuceroShop>
 
     public void CloseShop()
     {
+        Debug.Log("[Shop] CloseShop llamado. Lockeando cursor.");
         shopCanvas.SetActive(false);
         Time.timeScale = 1f;
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
         currentState = ShopState.Closed;
         currentlyViewedItem = null;
+
+        // Forzar el lockeo un frame despues (por si algo lo destildea)
+        StartCoroutine(ForceLockNextFrame());
+    }
+
+    private System.Collections.IEnumerator ForceLockNextFrame()
+    {
+        yield return null;
+        yield return null;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+        Debug.Log("[Shop] Cursor forzado a Locked despues de 2 frames.");
     }
 
     // Cada metodo Show* maneja un estado distinto de la tienda
@@ -112,20 +131,15 @@ public class ChapuceroShop : Singleton<ChapuceroShop>
         bool yaLoTiene = false;
         if (player != null)
         {
-            switch (item.itemId)
+            var powerUps = player.GetComponent<PlayerPowerUps>();
+            if (powerUps != null)
             {
-                case "boots":
-                    var boots = player.GetComponentInChildren<BootsPowerUp>(true);
-                    if (boots != null && boots.enabled) yaLoTiene = true;
-                    break;
-                case "socks":
-                    var socks = player.GetComponentInChildren<SocksPowerUp>(true);
-                    if (socks != null && socks.enabled) yaLoTiene = true;
-                    break;
-                case "gloves":
-                    var gloves = player.GetComponentInChildren<GlovesPowerUp>(true);
-                    if (gloves != null && gloves.enabled) yaLoTiene = true;
-                    break;
+                switch (item.itemId)
+                {
+                    case "boots": yaLoTiene = powerUps.hasBoots; break;
+                    case "socks": yaLoTiene = powerUps.hasSocks; break;
+                    case "gloves": yaLoTiene = powerUps.hasGloves; break;
+                }
             }
         }
 
@@ -222,20 +236,18 @@ public class ChapuceroShop : Singleton<ChapuceroShop>
         var player = GameObject.FindGameObjectWithTag("Player");
         if (player == null) return;
 
+        var powerUps = player.GetComponent<PlayerPowerUps>();
+        if (powerUps == null)
+        {
+            Debug.LogWarning("ChapuceroShop: el player no tiene PlayerPowerUps");
+            return;
+        }
+
         switch (item.itemId)
         {
-            case "boots":
-                var boots = player.GetComponentInChildren<BootsPowerUp>(true);
-                if (boots != null) boots.enabled = true;
-                break;
-            case "socks":
-                var socks = player.GetComponentInChildren<SocksPowerUp>(true);
-                if (socks != null) socks.enabled = true;
-                break;
-            case "gloves":
-                var gloves = player.GetComponentInChildren<GlovesPowerUp>(true);
-                if (gloves != null) gloves.enabled = true;
-                break;
+            case "boots": powerUps.EquipBoots(); break;
+            case "socks": powerUps.EquipSocks(); break;
+            case "gloves": powerUps.EquipGloves(); break;
         }
     }
 }

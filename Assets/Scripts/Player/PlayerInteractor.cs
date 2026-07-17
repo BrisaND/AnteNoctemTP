@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using TMPro;
 using AnteNoctem.Interactions;
 
@@ -19,7 +19,7 @@ public class PlayerInteractor : MonoBehaviour
     // ===== POLIMORFISMO via INTERFACE =====
     // Esta variable puede guardar CUALQUIER cosa que implemente IInteractable: un tacho, el chapucero, lo que sea.
     // El polimorfismo es eso: una misma variable puede tomar muchas formas distintas.
-    // Asi este script no necesita saber con qu� objeto especifico esta hablando, solo necesita saber que cumple el contrato.
+    // Asi este script no necesita saber con qué objeto especifico esta hablando, solo necesita saber que cumple el contrato.
     private IInteractable currentInteractable;
 
     void Awake()
@@ -51,9 +51,16 @@ public class PlayerInteractor : MonoBehaviour
 
         foreach (var col in hits)
         {
-            // De cada collider sacamos su componente IInteractable (si lo tiene)
+            Debug.Log("PlayerInteractor detecta collider: " + col.name);
+
             IInteractable interactable = col.GetComponentInParent<IInteractable>();
-            if (interactable == null) continue;
+            if (interactable == null)
+            {
+                Debug.Log("  → NO tiene IInteractable");
+                continue;
+            }
+            Debug.Log("  → SÍ tiene IInteractable: " + interactable.GetType().Name);
+
             if (!interactable.CanInteract()) continue;
 
             float dist = Vector3.Distance(transform.position, col.transform.position);
