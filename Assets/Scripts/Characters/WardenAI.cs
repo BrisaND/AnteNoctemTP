@@ -123,6 +123,7 @@ public class WardenAI : EnemyBase
         switch (currentState)
         {
             case WardenState.Patrolling:
+                // Si se está moviendo reproduce Caminar; si está esperando en un punto (velocidad 0) reproduce Idle
                 if (agent != null && agent.velocity.sqrMagnitude > 0.1f)
                 {
                     ReproducirAnimacion(animCaminar);
@@ -162,7 +163,7 @@ public class WardenAI : EnemyBase
         switch (currentState)
         {
             case WardenState.Patrolling:
-                Patrol();
+                Patrol(); // Usa el sistema de patrullaje con espera de EnemyBase
                 if (sees || hears) StartChase();
                 break;
 
@@ -232,6 +233,14 @@ public class WardenAI : EnemyBase
         if (currentState == nuevoEstado) return;
         currentState = nuevoEstado;
 
+        // Cancela cualquier espera previa de patrulla
+        StopWaitCoroutine();
+
+        if (agent != null && agent.isOnNavMesh)
+        {
+            agent.isStopped = false; // Desbloqueo forzado del agente
+        }
+
         if (_whistleCoroutine != null)
         {
             StopCoroutine(_whistleCoroutine);
@@ -246,6 +255,8 @@ public class WardenAI : EnemyBase
         switch (currentState)
         {
             case WardenState.Patrolling:
+                // Al volver a patrullar, nos aseguramos de asignar destino inmediato
+                GoToNextPatrolPoint();
                 break;
 
             case WardenState.Chasing:
@@ -255,7 +266,6 @@ public class WardenAI : EnemyBase
                     audioSource.loop = true;
                     audioSource.Play();
                 }
-
                 _whistleCoroutine = StartCoroutine(CoroutineChaseWhistle());
                 break;
 
@@ -264,10 +274,9 @@ public class WardenAI : EnemyBase
         }
     }
 
-    // Corrutina que gestiona el silbato usando intervalos y probabilidad (como el perro)
+    // Corrutina que gestiona el silbato usando intervalos y probabilidad
     IEnumerator CoroutineChaseWhistle()
     {
-        // Primer silbatazo instantáneo al iniciar la persecución para alertar visualmente al jugador
         if (whistleSound != null && audioSource != null)
         {
             audioSource.PlayOneShot(whistleSound);
@@ -276,18 +285,14 @@ public class WardenAI : EnemyBase
 
         while (currentState == WardenState.Chasing)
         {
-            // Espera el delay de silencio antes de tirar la probabilidad del próximo silbatazo
             float delay = Random.Range(minWhistleDelay, maxWhistleDelay);
             yield return new WaitForSeconds(delay);
 
             if (currentState == WardenState.Chasing && whistleSound != null && audioSource != null)
             {
-                // Tiramos probabilidad (ej. 70% de que suene en este ciclo)
                 if (Random.value <= whistleProbability)
                 {
                     audioSource.PlayOneShot(whistleSound);
-
-                    // Esperamos que el clip termine de sonar antes de reactivar el bucle
                     yield return new WaitForSeconds(whistleSound.length);
                 }
             }

@@ -16,10 +16,6 @@ public class PlayerInteractor : MonoBehaviour
 
     private PlayerController playerCtrl;
 
-    // ===== POLIMORFISMO via INTERFACE =====
-    // Esta variable puede guardar CUALQUIER cosa que implemente IInteractable: un tacho, el chapucero, lo que sea.
-    // El polimorfismo es eso: una misma variable puede tomar muchas formas distintas.
-    // Asi este script no necesita saber con qué objeto especifico esta hablando, solo necesita saber que cumple el contrato.
     private IInteractable currentInteractable;
 
     void Awake()

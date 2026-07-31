@@ -28,7 +28,7 @@ public class GuardDogAI : EnemyBase
     [Tooltip("Distancia a la que detecta una marca")]
     public float scentRange = 8f;
     [Tooltip("Distancia a la que considera que llego a la marca")]
-    public float scentReachDistance = 0.8f;
+    public float scentReachDistance = 0.4f;
     public float trackingSpeed = 4f;
 
     [Header("Captura")]
@@ -58,8 +58,6 @@ public class GuardDogAI : EnemyBase
     [Space(5)]
     [Tooltip("Ladrido para persecución y alertas.")]
     public AudioClip barkTrackingSound;
-    [Tooltip("Gruñido para alternar con ladridos durante el rastreo (opcional). Si queda vacío, usará el gruñido de arrastre.")]
-    public AudioClip growlTrackingSound;
     [Tooltip("Gruñido agresivo continuo para cuando te muerde y te arrastra.")]
     public AudioClip growlDraggingSound;
 
@@ -90,7 +88,7 @@ public class GuardDogAI : EnemyBase
     private bool isStunned = false;
     private bool wasPlayerHidden = false;
 
-    Coroutine _CoroutineDog;
+    private Coroutine _CoroutineDog;
 
     protected override void Start()
     {
@@ -145,7 +143,7 @@ public class GuardDogAI : EnemyBase
         {
             if (wasPlayerHidden && !playerCtrl.isHidden)
             {
-                if (agent != null) agent.isStopped = false;
+                if (agent != null && agent.isOnNavMesh) agent.isStopped = false;
                 if (Vector3.Distance(transform.position, player.position) <= scentRange)
                 {
                     CambiarEstado(DogState.Tracking);
@@ -221,7 +219,7 @@ public class GuardDogAI : EnemyBase
 
     void Track()
     {
-        agent.speed = trackingSpeed;
+        if (agent != null && agent.isOnNavMesh) agent.speed = trackingSpeed;
 
         if (currentTarget == null)
         {
@@ -254,14 +252,22 @@ public class GuardDogAI : EnemyBase
         }
 
         currentTarget = freshest;
-        agent.SetDestination(currentTarget.transform.position);
+        if (agent != null && agent.isOnNavMesh) agent.SetDestination(currentTarget.transform.position);
     }
 
     void ReturnToPatrol()
     {
         currentTarget = null;
+        StopWaitCoroutine(); // Limpia el estado de espera anterior
+
+        if (agent != null && agent.isOnNavMesh)
+        {
+            agent.updatePosition = true;
+            agent.isStopped = false;
+        }
+
         CambiarEstado(DogState.Patrolling);
-        if (patrolPoints.Count > 0) GoToNextPatrolPoint();
+        if (patrolPoints != null && patrolPoints.Count > 0) GoToNextPatrolPoint();
     }
 
     void CheckBite()
@@ -294,8 +300,11 @@ public class GuardDogAI : EnemyBase
                     return;
                 }
 
-                agent.isStopped = true;
-                agent.velocity = Vector3.zero;
+                if (agent != null && agent.isOnNavMesh)
+                {
+                    agent.isStopped = true;
+                    agent.velocity = Vector3.zero;
+                }
 
                 CambiarAnimacion(idLadrar);
 
@@ -327,7 +336,7 @@ public class GuardDogAI : EnemyBase
                 }
                 else
                 {
-                    if (agent.isStopped) agent.isStopped = false;
+                    if (agent != null && agent.isOnNavMesh && agent.isStopped) agent.isStopped = false;
                     ReturnToPatrol();
                 }
             }
@@ -348,30 +357,27 @@ public class GuardDogAI : EnemyBase
             }
             else
             {
-                // Usa el gruñido de tracking. Si no hay, usa el de arrastre como fallback
-                clipToPlay = growlTrackingSound != null ? growlTrackingSound : growlDraggingSound;
+                clipToPlay = growlDraggingSound;
             }
 
-            if (clipToPlay != null)
+            if (clipToPlay != null && audioSource != null)
             {
                 audioSource.clip = clipToPlay;
                 audioSource.loop = false;
                 audioSource.Play();
 
-                // Esperamos que termine de sonar el clip entero antes de calcular el siguiente intervalo
                 yield return new WaitForSeconds(clipToPlay.length);
             }
 
-            // Espera un silencio aleatorio antes de volver a sonar
             float randomDelay = Random.Range(minSoundDelay, maxSoundDelay);
             yield return new WaitForSeconds(randomDelay);
         }
     }
 
-    // CORRUTINA B: Ladrido constante y desesperado al encontrar al jugador en un escondite
+    // CORRUTINA B: Ladrido constante al encontrar al jugador en un escondite
     IEnumerator CoroutineHidingSpotBarks()
     {
-        if (barkTrackingSound == null) yield break;
+        if (barkTrackingSound == null || audioSource == null) yield break;
 
         audioSource.clip = barkTrackingSound;
         audioSource.loop = false;
@@ -379,7 +385,6 @@ public class GuardDogAI : EnemyBase
         while (true)
         {
             audioSource.Play();
-            // Espera a que termine el ladrido + un intervalo muy corto para simular desesperación
             yield return new WaitForSeconds(barkTrackingSound.length + Random.Range(0.15f, 0.4f));
         }
     }
@@ -389,7 +394,6 @@ public class GuardDogAI : EnemyBase
         if (isStunned) return;
         CambiarEstado(DogState.Dragging);
 
-        // Desactivar colisiones mutuas inmediatamente al iniciar el arrastre
         Collider dogCollider = GetComponent<Collider>();
         if (player != null)
         {
@@ -399,11 +403,9 @@ public class GuardDogAI : EnemyBase
                 Physics.IgnoreCollision(dogCollider, playerCollider, true);
             }
 
-            // Desactivamos el CharacterController para que no pelee con el movimiento del perro
             var controller = player.GetComponent<CharacterController>();
             if (controller != null) controller.enabled = false;
 
-            // Respaldo preventivo si te olvidás de asignar el ancla en el inspector
             if (biteAnchor == null)
             {
                 GameObject backupAnchor = new GameObject("BiteAnchor_Backup");
@@ -412,13 +414,11 @@ public class GuardDogAI : EnemyBase
                 biteAnchor = backupAnchor.transform;
             }
 
-            // Emparentamos el jugador al ancla para que se mueva solidario al perro
             player.SetParent(biteAnchor);
             player.localPosition = Vector3.zero;
             player.localRotation = Quaternion.identity;
         }
 
-        // Configurar e iniciar minijuego sin tiempo (infinito) en EventFlower
         if (escapeMinigame != null)
         {
             escapeMinigame.useTimeLimit = false;
@@ -445,14 +445,13 @@ public class GuardDogAI : EnemyBase
         var warden = target.GetComponent<WardenAI>();
         if (warden != null) warden.AlertToPosition(transform.position);
 
-        agent.speed = dragSpeed;
+        if (agent != null && agent.isOnNavMesh) agent.speed = dragSpeed;
 
         while (minigameActive)
         {
-            agent.SetDestination(target.position);
+            if (agent != null && agent.isOnNavMesh) agent.SetDestination(target.position);
             CambiarAnimacion(idArrastrar);
 
-            // Forzado frame a frame en el transform del ancla para evitar tirones visuales
             if (player != null && biteAnchor != null)
             {
                 player.position = biteAnchor.position;
@@ -468,7 +467,7 @@ public class GuardDogAI : EnemyBase
                     StopCoroutine(_CoroutineDog);
 
                 _CoroutineDog = null;
-                if (player != null) player.SetParent(null); // Despegamos al jugador del perro antes del GameOver
+                if (player != null) player.SetParent(null);
 
                 if (GameManager.Instance != null) GameManager.Instance.GameOver("El perro te llevo al Warden");
                 yield break;
@@ -480,7 +479,6 @@ public class GuardDogAI : EnemyBase
 
     void OnMinigameResult(bool success)
     {
-        // Si el minijuego termina con éxito y estábamos siendo arrastrados, nos liberamos
         if (success && minigameActive)
         {
             minigameActive = false;
@@ -493,7 +491,6 @@ public class GuardDogAI : EnemyBase
     {
         isStunned = true;
 
-        // Detener sonidos y corrutinas activas al quedar aturdido
         if (audioSource != null) audioSource.Stop();
         if (_CoroutineDog != null)
         {
@@ -503,24 +500,21 @@ public class GuardDogAI : EnemyBase
 
         if (player != null)
         {
-            player.SetParent(null); // <-- suelta al jugador de la jerarquía del perro
+            player.SetParent(null);
             var controller = player.GetComponent<CharacterController>();
-            if (controller != null) controller.enabled = true; // <-- le devuelve el control físico
+            if (controller != null) controller.enabled = true;
         }
 
-        // El perro retrocede firmemente unos pasos hacia atrás
         Vector3 knockbackDir = -transform.forward;
         Vector3 destination = transform.position + knockbackDir * knockbackDistance;
 
-        // Corregido el out NavMeshHit sin usings inválidos
         if (NavMesh.SamplePosition(destination, out NavMeshHit hit, knockbackDistance, NavMesh.AllAreas))
         {
-            agent.SetDestination(hit.position);
+            if (agent != null && agent.isOnNavMesh) agent.SetDestination(hit.position);
         }
 
         yield return new WaitForFixedUpdate();
 
-        // Reactivar colisiones ahora que están separados de forma segura
         Collider dogCollider = GetComponent<Collider>();
         if (player != null)
         {
@@ -542,7 +536,7 @@ public class GuardDogAI : EnemyBase
         }
 
         isStunned = false;
-        if (patrolPoints.Count > 0) GoToNextPatrolPoint();
+        if (patrolPoints != null && patrolPoints.Count > 0) GoToNextPatrolPoint();
     }
 
     private void CambiarEstado(DogState nuevoEstado)
@@ -550,30 +544,33 @@ public class GuardDogAI : EnemyBase
         if (currentState == nuevoEstado) return;
         currentState = nuevoEstado;
 
-        if (audioSource == null) return;
+        // Limpia cualquier estado de espera previo
+        StopWaitCoroutine();
 
-        // Limpieza absoluta de audios y corrutinas anteriores al cambiar de estado
+        if (agent != null && agent.isOnNavMesh)
+        {
+            agent.isStopped = false;
+        }
+
         if (_CoroutineDog != null)
         {
             StopCoroutine(_CoroutineDog);
             _CoroutineDog = null;
         }
-        audioSource.Stop();
+
+        if (audioSource != null) audioSource.Stop();
 
         switch (currentState)
         {
             case DogState.Patrolling:
-                // El patrullaje normal del perro es silencioso (o puedes meter jadeos aquí si quisieras)
                 break;
 
             case DogState.Tracking:
-                // Comenzamos el ciclo de ladridos/gruñidos aleatorios intercalados
                 _CoroutineDog = StartCoroutine(CoroutineDogSounds());
                 break;
 
             case DogState.Dragging:
-                // Durante el arrastre, el gruñido es continuo (loop de toda la vida)
-                if (growlDraggingSound != null)
+                if (audioSource != null && growlDraggingSound != null)
                 {
                     audioSource.clip = growlDraggingSound;
                     audioSource.loop = true;
