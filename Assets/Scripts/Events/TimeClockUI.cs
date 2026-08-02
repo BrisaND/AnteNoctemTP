@@ -1,3 +1,5 @@
+//TPFinal - Joaquin Campana
+
 using UnityEngine;
 
 public class TimeClockUI : MonoBehaviour

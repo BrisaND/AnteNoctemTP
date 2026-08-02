@@ -1,3 +1,5 @@
+//TPFinal - Brisa Desouches
+
 using UnityEngine;
 
 public class ShoulderCamera : MonoBehaviour

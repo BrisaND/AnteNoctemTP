@@ -1,3 +1,5 @@
+//TPFinal - Pedro Valle
+
 using UnityEngine;
 using AnteNoctem.Core;
 using System;
@@ -8,6 +10,9 @@ public class MaterialInventory : Singleton<MaterialInventory>
     public enum MaterialType { Hilo, Tela, Cuero }
 
     private Dictionary<MaterialType, int> inventory = new Dictionary<MaterialType, int>();
+
+    // Func para determinar si un material dropea segun la probabilidad dada
+    public Func<float, bool> ShouldDropByChance = (chance) => UnityEngine.Random.value <= chance;
 
     public Action<MaterialType, int> OnMaterialAdded;
 
@@ -51,7 +56,7 @@ public class MaterialInventory : Singleton<MaterialInventory>
 
     public MaterialType? TryDropMaterial()
     {
-        if (UnityEngine.Random.value > dropChance) return null;
+        if (!ShouldDropByChance(dropChance)) return null;
 
         float totalWeight = hiloWeight + telaWeight + cueroWeight;
         float roll = UnityEngine.Random.value * totalWeight;
