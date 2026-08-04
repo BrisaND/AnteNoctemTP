@@ -17,6 +17,10 @@ public class CitizenAI : MonoBehaviour
     [SerializeField] private string animCaminar = "WALKINGPONE";
     [SerializeField] private string animSujetar = "SURPRISE";
 
+    [Header("UI de Interacción")]
+    [Tooltip("Panel o Texto de UI (ej: 'Presiona E para Robar') que se muestra al estar cerca")]
+    public GameObject interactionPromptUI;
+
     [Header("Configuración de Robo")]
     public bool randomizeDifficulty = true;
     public RobberySystem.DifficultyLevel difficulty = RobberySystem.DifficultyLevel.Easy;
@@ -30,6 +34,7 @@ public class CitizenAI : MonoBehaviour
     // Variables de control de estado
     private float dineroActual;
     private bool haSidoRobado = false;
+    private bool isPlayerInRange = false;
 
     [Header("Patrullaje")]
     public List<Transform> patrolPoints = new List<Transform>();
@@ -73,11 +78,13 @@ public class CitizenAI : MonoBehaviour
                 audioSource.spatialBlend = 1f;
             }
         }
+
+        // Aseguramos que la UI comience oculta
+        SetPromptVisible(false);
     }
 
     void Start()
     {
-        // Asignamos una cantidad de dinero aleatoria al nacer
         dineroActual = Random.Range(dineroMinimo, dineroMaximo);
 
         if (randomizeDifficulty)
@@ -102,7 +109,11 @@ public class CitizenAI : MonoBehaviour
 
     void Update()
     {
-        if (GameManager.Instance != null && GameManager.Instance.gameState != GameManager.GameState.Playing) return;
+        if (GameManager.Instance != null && GameManager.Instance.gameState != GameManager.GameState.Playing)
+        {
+            SetPromptVisible(false);
+            return;
+        }
 
         switch (currentState)
         {
@@ -112,6 +123,7 @@ public class CitizenAI : MonoBehaviour
                 ControlarAnimacionMovimiento();
                 break;
             case CitizenState.Detaining:
+                SetPromptVisible(false); // Ocultar UI si el ciudadano está sujetando al jugador
                 ReproducirAnimacion(animSujetar);
                 break;
         }
@@ -157,16 +169,43 @@ public class CitizenAI : MonoBehaviour
     {
         if (player == null) return;
 
-        // Validamos que el ciudadano NO haya sido robado para permitir interacción
-        if (haSidoRobado) return;
+        // Si ya fue robado, no se muestra nada y se ignora la interacción
+        if (haSidoRobado)
+        {
+            if (isPlayerInRange) SetPromptVisible(false);
+            return;
+        }
 
         float dist = Vector3.Distance(transform.position, player.position);
+
         if (dist <= _interactDistance)
         {
+            if (!isPlayerInRange)
+            {
+                SetPromptVisible(true);
+            }
+
             if (Input.GetKeyDown(KeyCode.E))
             {
+                SetPromptVisible(false);
                 StartInteraction();
             }
+        }
+        else
+        {
+            if (isPlayerInRange)
+            {
+                SetPromptVisible(false);
+            }
+        }
+    }
+
+    private void SetPromptVisible(bool visible)
+    {
+        isPlayerInRange = visible;
+        if (interactionPromptUI != null)
+        {
+            interactionPromptUI.SetActive(visible);
         }
     }
 
@@ -175,7 +214,6 @@ public class CitizenAI : MonoBehaviour
         if (QuickEventManager.Instance == null || QuickEventManager.Instance.IsActive) return;
         if (GameManager.Instance != null && GameManager.Instance.gameState != GameManager.GameState.Playing) return;
 
-        // Doble validación por seguridad
         if (haSidoRobado) return;
 
         QuickEventManager.Instance.StartQuickEvent(this);
@@ -183,12 +221,12 @@ public class CitizenAI : MonoBehaviour
 
     public void OnPlayerInteractionResult(bool success)
     {
+        SetPromptVisible(false);
+
         if (success)
         {
-            // Marcamos al ciudadano como robado. Ya no se podrá interactuar con él, ni dará más dinero/puntos.
             haSidoRobado = true;
 
-            // Gestión de Puntos
             if (RobberySystem.Instance != null)
             {
                 RobberySystem.Instance.AwardStealPoints(difficulty, "Robo al ciudadano");
@@ -198,18 +236,14 @@ public class CitizenAI : MonoBehaviour
                 GameManager.Instance.AddScore(Random.Range(5, 16));
             }
 
-            // Gestión de Dinero (Aquí llamas al sistema donde el jugador guarda su dinero)
             Debug.Log($"¡Éxito! Has robado {dineroActual:F2} pesos.");
-            // Ejemplo: Wallet.Instance.AddMoney(dineroActual);
 
-            // Efectos Visuales
             if (pesosParticlesPrefab != null)
             {
                 Vector3 spawnPos = particleSpawnPoint != null ? particleSpawnPoint.position : transform.position;
                 Instantiate(pesosParticlesPrefab, spawnPos, Quaternion.identity);
             }
 
-            // Audio del ciudadano específico
             if (audioSource != null && robSoundSuccess != null)
             {
                 audioSource.PlayOneShot(robSoundSuccess);
@@ -276,8 +310,6 @@ public class CitizenAI : MonoBehaviour
 
         if (playerCtrl != null) playerCtrl.SetControlsEnabled(true);
 
-        // Si el robo falló, NO se marca como robado (haSidoRobado = false). 
-        // El jugador puede intentar robarle de nuevo si quiere arriesgarse.
         ResumePatrol();
     }
 

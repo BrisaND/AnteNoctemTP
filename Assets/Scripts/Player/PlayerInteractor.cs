@@ -49,15 +49,15 @@ public class PlayerInteractor : MonoBehaviour
 
         foreach (var col in hits)
         {
-            Debug.Log("PlayerInteractor detecta collider: " + col.name);
+            //Debug.Log("PlayerInteractor detecta collider: " + col.name);
 
             IInteractable interactable = col.GetComponentInParent<IInteractable>();
             if (interactable == null)
             {
-                Debug.Log("  → NO tiene IInteractable");
+                //Debug.Log("  → NO tiene IInteractable");
                 continue;
             }
-            Debug.Log("  → SÍ tiene IInteractable: " + interactable.GetType().Name);
+            //Debug.Log("  → SÍ tiene IInteractable: " + interactable.GetType().Name);
 
             if (!interactable.CanInteract()) continue;
 

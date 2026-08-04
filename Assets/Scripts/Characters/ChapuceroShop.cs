@@ -6,10 +6,8 @@ using TMPro;
 using System.Collections.Generic;
 using AnteNoctem.Core;
 
-// El <ChapuceroShop> es el parametro generico: le dice al Singleton de que tipo es esta instancia.
 public class ChapuceroShop : Singleton<ChapuceroShop>
 {
-    // Los estados posibles de la tienda. Asi sabemos en que momento del flujo esta.
     public enum ShopState { Closed, Greeting, ShowingItem, Confirmation }
 
     [Header("UI Principal")]
@@ -31,6 +29,11 @@ public class ChapuceroShop : Singleton<ChapuceroShop>
     public Transform itemSelectorContainer;
     public Button itemButtonPrefab;
 
+    [Header("UI de Materiales del Jugador (En el Shop)")]
+    public TMP_Text hiloCountText;
+    public TMP_Text telaCountText;
+    public TMP_Text cueroCountText;
+
     [Header("Items disponibles")]
     public List<ShopItem> items = new List<ShopItem>();
 
@@ -41,15 +44,11 @@ public class ChapuceroShop : Singleton<ChapuceroShop>
     [TextArea(2, 4)] public string purchaseSuccessText = "Listo, ahi lo tenes. Que te sirva.";
     [TextArea(2, 4)] public string alreadyPurchasedText = "Eso ya te lo arme antes, no necesitas otro.";
 
-    // Variables privadas: solo este script puede modificarlas. Asi protegemos el estado interno.
     private ShopState currentState = ShopState.Closed;
     private ShopItem currentlyViewedItem;
     private List<Button> spawnedItemButtons = new List<Button>();
 
-    // Otros scripts pueden leer si la tienda esta abierta, pero no pueden cambiarlo desde afuera
     public bool IsOpen => currentState != ShopState.Closed;
-
-    // Bandera para avisar al PauseManager que este frame la tienda uso el Esc
     public bool JustClosedThisFrame { get; private set; } = false;
 
     void Start()
@@ -62,7 +61,6 @@ public class ChapuceroShop : Singleton<ChapuceroShop>
 
     void Update()
     {
-        // Reseteamos la bandera al comienzo del frame
         JustClosedThisFrame = false;
 
         if (currentState != ShopState.Closed && Input.GetKeyDown(KeyCode.Q))
@@ -79,12 +77,13 @@ public class ChapuceroShop : Singleton<ChapuceroShop>
         Time.timeScale = 0f;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+
+        UpdateMaterialUI(); // Actualizamos las cantidades al abrir
         ShowGreeting();
     }
 
     public void CloseShop()
     {
-        Debug.Log("[Shop] CloseShop llamado. Lockeando cursor.");
         shopCanvas.SetActive(false);
         Time.timeScale = 1f;
         Cursor.lockState = CursorLockMode.Locked;
@@ -92,7 +91,6 @@ public class ChapuceroShop : Singleton<ChapuceroShop>
         currentState = ShopState.Closed;
         currentlyViewedItem = null;
 
-        // Forzar el lockeo un frame despues (por si algo lo destildea)
         StartCoroutine(ForceLockNextFrame());
     }
 
@@ -102,10 +100,7 @@ public class ChapuceroShop : Singleton<ChapuceroShop>
         yield return null;
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
-        Debug.Log("[Shop] Cursor forzado a Locked despues de 2 frames.");
     }
-
-    // Cada metodo Show* maneja un estado distinto de la tienda
 
     void ShowGreeting()
     {
@@ -127,10 +122,9 @@ public class ChapuceroShop : Singleton<ChapuceroShop>
         currentState = ShopState.Confirmation;
         currentlyViewedItem = item;
 
-        // Buscamos al Player y vemos si ya tiene equipado este item
         GameObject player = GameObject.FindGameObjectWithTag("Player");
-
         bool yaLoTiene = false;
+
         if (player != null)
         {
             var powerUps = player.GetComponent<PlayerPowerUps>();
@@ -145,23 +139,17 @@ public class ChapuceroShop : Singleton<ChapuceroShop>
             }
         }
 
-        // Mostramos el texto adecuado segun si ya lo tiene o no
-        string txt;
-        if (yaLoTiene) txt = alreadyPurchasedText;
-        else txt = item.displayName + ": " + item.description;
-
+        string txt = yaLoTiene ? alreadyPurchasedText : $"{item.displayName}: {item.description}";
         if (dialogueTextBuy != null) dialogueTextBuy.text = txt;
 
-        // Creamos un MaterialRequirement con el costo del item y usamos su ToString para mostrarlo
+        // Muestra el costo en pantalla de manera explícita
         if (costText != null)
         {
-            var cost = new MaterialRequirement(item.hiloCost, item.telaCost, item.cueroCost);
-            costText.text = cost.ToString();
+            costText.text = $"Hilo {item.hiloCost} | Tela {item.telaCost} | Cuero {item.cueroCost}";
         }
 
         SetActivePanel(showNext: false, showBuy: true, showSelector: false);
 
-        // El boton solo es interactuable si el jugador NO lo tiene equipado
         if (buyButton != null) buyButton.interactable = !yaLoTiene;
     }
 
@@ -172,7 +160,6 @@ public class ChapuceroShop : Singleton<ChapuceroShop>
         if (itemSelectorContainer != null) itemSelectorContainer.gameObject.SetActive(showSelector);
     }
 
-    // Botones del flujo de la tienda
     void OnNextClicked() { ShowItemList(); }
     void OnRejectClicked() { ShowItemList(); }
 
@@ -180,7 +167,6 @@ public class ChapuceroShop : Singleton<ChapuceroShop>
     {
         if (currentlyViewedItem == null) return;
 
-        // Armamos el costo del item como un MaterialRequirement y le preguntamos si el jugador puede pagarlo
         var requirement = new MaterialRequirement(
             currentlyViewedItem.hiloCost,
             currentlyViewedItem.telaCost,
@@ -193,7 +179,6 @@ public class ChapuceroShop : Singleton<ChapuceroShop>
             return;
         }
 
-        // Descontamos los materiales
         var inv = MaterialInventory.Instance;
         if (inv != null)
         {
@@ -202,7 +187,9 @@ public class ChapuceroShop : Singleton<ChapuceroShop>
             inv.RemoveMaterials(MaterialInventory.MaterialType.Cuero, currentlyViewedItem.cueroCost);
         }
 
-        // Equipamos el item al jugador
+        // Actualizamos los contadores inmediatamente tras descontar
+        UpdateMaterialUI();
+
         EquipItem(currentlyViewedItem);
         currentlyViewedItem.isPurchased = true;
 
@@ -212,38 +199,31 @@ public class ChapuceroShop : Singleton<ChapuceroShop>
 
     void BuildItemButtons()
     {
-        // Limpiamos los botones del listado anterior (si quedaron)
         foreach (var b in spawnedItemButtons)
             if (b != null) Destroy(b.gameObject);
         spawnedItemButtons.Clear();
 
         if (itemButtonPrefab == null || itemSelectorContainer == null) return;
 
-        // Por cada item disponible, instanciamos un boton clickeable
         foreach (var item in items)
         {
             Button btn = Instantiate(itemButtonPrefab, itemSelectorContainer);
             var txt = btn.GetComponentInChildren<TMP_Text>();
             if (txt != null) txt.text = item.displayName;
+
             ShopItem localItem = item;
             btn.onClick.AddListener(() => ShowItem(localItem));
             spawnedItemButtons.Add(btn);
         }
     }
 
-    // Activa el componente del power-up correspondiente en el Player
     void EquipItem(ShopItem item)
     {
-        Debug.Log("Item equipado: " + item.itemId);
         var player = GameObject.FindGameObjectWithTag("Player");
         if (player == null) return;
 
         var powerUps = player.GetComponent<PlayerPowerUps>();
-        if (powerUps == null)
-        {
-            Debug.LogWarning("ChapuceroShop: el player no tiene PlayerPowerUps");
-            return;
-        }
+        if (powerUps == null) return;
 
         switch (item.itemId)
         {
@@ -251,5 +231,42 @@ public class ChapuceroShop : Singleton<ChapuceroShop>
             case "socks": powerUps.EquipSocks(); break;
             case "gloves": powerUps.EquipGloves(); break;
         }
+    }
+
+    public void UpdateMaterialUI()
+    {
+        var inv = MaterialInventory.Instance;
+        if (inv == null)
+        {
+            Debug.LogError("[Shop UI Error] MaterialInventory.Instance es NULL. ¿Existe el GameObject en la escena?");
+            return;
+        }
+
+        int hilo = inv.GetCount(MaterialInventory.MaterialType.Hilo);
+        int tela = inv.GetCount(MaterialInventory.MaterialType.Tela);
+        int cuero = inv.GetCount(MaterialInventory.MaterialType.Cuero);
+
+        Debug.Log($"[Shop UI Info] Datos del inventario -> Hilo: {hilo}, Tela: {tela}, Cuero: {cuero}");
+
+        if (hiloCountText != null)
+        {
+            hiloCountText.text = hilo.ToString();
+            Debug.Log("[Shop UI] hiloCountText actualizado a " + hilo);
+        }
+        else Debug.LogWarning("[Shop UI Error] hiloCountText NO está asignado en el Inspector.");
+
+        if (telaCountText != null)
+        {
+            telaCountText.text = tela.ToString();
+            Debug.Log("[Shop UI] telaCountText actualizado a " + tela);
+        }
+        else Debug.LogWarning("[Shop UI Error] telaCountText NO está asignado en el Inspector.");
+
+        if (cueroCountText != null)
+        {
+            cueroCountText.text = cuero.ToString();
+            Debug.Log("[Shop UI] cueroCountText actualizado a " + cuero);
+        }
+        else Debug.LogWarning("[Shop UI Error] cueroCountText NO está asignado en el Inspector.");
     }
 }

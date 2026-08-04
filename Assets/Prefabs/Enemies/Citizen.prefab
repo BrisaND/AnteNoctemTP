@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 248120508339529046}
   - component: {fileID: 5716082317945101317}
   - component: {fileID: 8733962381971866473}
+  - component: {fileID: 559490225467344223}
   m_Layer: 0
   m_Name: Citizen
   m_TagString: Untagged
@@ -110,13 +111,19 @@ MonoBehaviour:
   animIdle: MIRARSE
   animCaminar: WALKINGPHONE
   animSujetar: SURPRISE
+  interactionPromptUI: {fileID: 8090017955145140242, guid: 46ed552638e85114eaf4ea519b5214de, type: 3}
   randomizeDifficulty: 1
   difficulty: 0
+  dineroMinimo: 10
+  dineroMaximo: 50
   patrolPoints:
   - {fileID: 0}
   - {fileID: 0}
   pesosParticlesPrefab: {fileID: 6037878743708652537, guid: b440d7903ec2ac6418f489cd9989a710, type: 3}
   particleSpawnPoint: {fileID: 6749953386566919040}
+  robSoundSuccess: {fileID: 8300000, guid: 2a76eed517c124c4ba7688580db6f3ae, type: 3}
+  detainSound: {fileID: 8300000, guid: 103caa0643b6ed3439035af16b833a1b, type: 3}
+  audioSource: {fileID: 559490225467344223}
   showGizmo: 0
 --- !u!136 &5716082317945101317
 CapsuleCollider:
@@ -154,6 +161,103 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   PaletteOverride: {fileID: 0}
+--- !u!82 &559490225467344223
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1075565693522725034}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 1
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!1 &6402561414005713605
 GameObject:
   m_ObjectHideFlags: 0
@@ -285,7 +389,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fc1fe773e0aea064cb0721b7fa25a372, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  citizen: {fileID: 248120508339529046}
   easyColor: {r: 0, g: 1, b: 0, a: 1}
   mediumColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   hardColor: {r: 1, g: 0, b: 0, a: 1}
