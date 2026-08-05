@@ -250,7 +250,7 @@ public class GameManager : Singleton<GameManager>
         UnlockCursor();
         StopTimerAudio();
         Debug.Log("Cargando pantalla de victoria desde la puerta de escape...");
-        SceneManager.LoadScene("Victory");
+        SceneManager.LoadScene("PostScene");
     }
 
     public void ReturnToBase()

@@ -8,7 +8,7 @@ public class MenuManager : MonoBehaviour
 
     public void PlayGame()
     {
-        LoadingScreen.LoadingScreenAsync("Base");
+        LoadingScreen.LoadingScreenAsync("IntroScene");
     }
 
     public void LoadCredits()

@@ -65,6 +65,7 @@
     <Compile Include="Assets\Scripts\Characters\CitizenSpawner.cs" />
     <Compile Include="Assets\Scripts\Hub\BaseMapView.cs" />
     <Compile Include="Assets\Scripts\Player\PowerUpUIController.cs" />
+    <Compile Include="Assets\Scripts\Screens\IntroVideoController.cs" />
     <Compile Include="Assets\MenuScripts\MenuManager.cs" />
     <Compile Include="Assets\Scripts\Characters\CitizenAI.cs" />
     <Compile Include="Assets\Scripts\Game\GameManager.cs" />

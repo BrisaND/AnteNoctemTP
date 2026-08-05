@@ -8,6 +8,18 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/MenuScenes/Menu.unity
     guid: cc057d44e08710940950a88afb780ff9
+  - enabled: 1
+    path: Assets/Scenes/MenuScenes/IntroScene.unity
+    guid: fa3b4fac4eba9b7488e9aa0b84d9e671
+  - enabled: 1
+    path: Assets/Scenes/MenuScenes/Loading.unity
+    guid: 6efeedcda0aecef4fa07b7139e28b203
+  - enabled: 1
+    path: Assets/Scenes/Base.unity
+    guid: 254a829404dc0af42a907974039c6254
+  - enabled: 1
+    path: Assets/Scenes/LevelInit.unity
+    guid: 62d9f1f7f8ad8d8468f1d93df4ed59fa
   - enabled: 0
     path: Assets/Scenes/Credits.unity
     guid: d0fd9ee5479770e4581fd84cc5fa1f60
@@ -18,17 +30,8 @@ EditorBuildSettings:
     path: Assets/Scenes/GameOver.unity
     guid: b3fe29991f1071542a50d34afbaa4da7
   - enabled: 1
-    path: Assets/Scenes/LevelInit.unity
-    guid: 62d9f1f7f8ad8d8468f1d93df4ed59fa
-  - enabled: 1
-    path: Assets/Scenes/Base.unity
-    guid: 254a829404dc0af42a907974039c6254
-  - enabled: 1
     path: Assets/Scenes/Victory.unity
     guid: 79e7163b6ea23ba40b53ed98c899b714
-  - enabled: 1
-    path: Assets/Scenes/MenuScenes/Loading.unity
-    guid: 6efeedcda0aecef4fa07b7139e28b203
   - enabled: 1
     path: Assets/Scenes/DEVroom.unity
     guid: 99c9720ab356a0642a771bea13969a05

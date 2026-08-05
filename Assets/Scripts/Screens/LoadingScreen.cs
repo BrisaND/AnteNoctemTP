@@ -12,32 +12,40 @@ public class LoadingScreen : MonoBehaviour
     [SerializeField] TextMeshProUGUI _progressText;
     [SerializeField] GameObject _pressAnyKey;
 
-    static string _nameLoadScene;
+    // Nombre estático de la escena destino a la que queremos ir
+    static string _targetSceneName;
 
     void Start()
     {
-        StartCoroutine(LoadSceneAsync(_nameLoadScene));
+        // Al iniciar la escena "Loading", empieza a cargar la escena destino
+        if (!string.IsNullOrEmpty(_targetSceneName))
+        {
+            StartCoroutine(LoadSceneAsync(_targetSceneName));
+        }
     }
 
-    public static void LoadingScreenAsync(string lvl)
+    /// <summary>
+    /// Guarda el nombre del nivel final y cambia primero a la escena "Loading".
+    /// </summary>
+    public static void LoadingScreenAsync(string targetLevel)
     {
-        _nameLoadScene = lvl;
-        SceneManager.LoadSceneAsync("Loading");
+        _targetSceneName = targetLevel;
+        SceneManager.LoadSceneAsync("Loading"); // <--- Debe decir estrictamente "Loading"
     }
 
     IEnumerator LoadSceneAsync(string sceneName)
     {
         yield return new WaitForSeconds(0.5f);
+
+        // Inicia la carga asíncrona del nivel destino
         var operation = SceneManager.LoadSceneAsync(sceneName);
         operation.allowSceneActivation = false;
 
         while (!operation.isDone)
         {
             float progress = Mathf.Clamp01(operation.progress / 0.9f);
-
             int percentage = Mathf.RoundToInt(progress * 100f);
 
-            // Actualizamos el texto en pantalla (Ej: "85%")
             if (_progressText != null)
             {
                 _progressText.text = percentage + "%";
@@ -50,7 +58,7 @@ public class LoadingScreen : MonoBehaviour
                 if (_pressAnyKey != null) _pressAnyKey.SetActive(true);
 
                 bool _anyKey = false;
-                while (_anyKey == false)
+                while (!_anyKey)
                 {
                     if (Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame)
                     {
