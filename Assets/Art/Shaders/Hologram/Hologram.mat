@@ -61,14 +61,14 @@ Material:
     m_Floats:
     - _AlphaClip: 0
     - _AlphaToMask: 0
-    - _Amplitude: 0
+    - _Amplitude: 0.387
     - _Blend: 0
     - _CastShadows: 0
     - _Cull: 2
     - _DstBlend: 10
     - _DstBlendAlpha: 10
-    - _Frecuency: 23
-    - _Power: 0.317
+    - _Frecuency: 38
+    - _Power: 0.375
     - _QueueControl: 0
     - _QueueOffset: 0
     - _SrcBlend: 5
