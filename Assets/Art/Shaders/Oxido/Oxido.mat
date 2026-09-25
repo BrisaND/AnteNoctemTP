@@ -38,10 +38,11 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _NoiseScale: 30
+    - _NoiseScale: 45
+    - _OxideScale: -0.03
     - _QueueControl: 0
     - _QueueOffset: 0
-    - _RustAmount: 0.5
+    - _RustAmount: 0.63
     m_Colors:
     - _MetalColor: {r: 0.5019608, g: 0.5019608, b: 0.5019608, a: 0}
     - _RustColor: {r: 0.54509807, g: 0.22745097, b: 0.10588237, a: 0}
