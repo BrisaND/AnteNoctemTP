@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Graffiti
-  m_Shader: {fileID: -6465566751694194690, guid: 6a8fe01379adf08488f205548e41fae7, type: 3}
+  m_Name: Oxido
+  m_Shader: {fileID: -6465566751694194690, guid: da408fdcb967cc248858680730bafc86, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -38,12 +38,16 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _NoiseScale: 30
     - _QueueControl: 0
     - _QueueOffset: 0
-    m_Colors: []
+    - _RustAmount: 0.5
+    m_Colors:
+    - _MetalColor: {r: 0.5019608, g: 0.5019608, b: 0.5019608, a: 0}
+    - _RustColor: {r: 0.54509807, g: 0.22745097, b: 0.10588237, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
---- !u!114 &2276890530949358158
+--- !u!114 &3136194783145464356
 MonoBehaviour:
   m_ObjectHideFlags: 11
   m_CorrespondingSourceObject: {fileID: 0}
